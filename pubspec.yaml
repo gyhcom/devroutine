@@ -1,0 +1,53 @@
+name: devroutine
+description: A routine management app for developers
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.2
+
+  # 상태 관리
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # 라우팅
+  auto_route: ^7.8.4
+
+  # 로컬 저장소
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # 모델 생성
+  freezed: ^2.4.7
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.8.1
+
+  # 유틸리티
+  intl: ^0.19.0
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # 코드 생성 도구
+  build_runner: ^2.4.8
+  auto_route_generator: ^7.3.2
+  riverpod_generator: ^2.3.11
+  json_serializable: ^6.7.1
+
+  # 린트
+  flutter_lints: ^2.0.0
+  custom_lint: ^0.6.4
+  riverpod_lint: ^2.3.9
+
+flutter:
+  uses-material-design: true
