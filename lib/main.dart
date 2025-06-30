@@ -42,19 +42,12 @@ class DevRoutineApp extends StatelessWidget {
           elevation: 0,
           centerTitle: true,
         ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            foregroundColor: AppColors.onPrimary,
-            backgroundColor: AppColors.primary,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.lg,
-              vertical: AppSizes.md,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSizes.borderRadiusMd),
-            ),
-          ),
+        scaffoldBackgroundColor: AppColors.background,
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.onPrimary,
         ),
+        cardColor: AppColors.surfaceLight,
       ),
       home: const HomeScreen(),
     );
@@ -67,7 +60,6 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
           'DevRoutine',
@@ -85,7 +77,7 @@ class HomeScreen extends StatelessWidget {
             children: [
               const SizedBox(height: AppSizes.xl),
               Text(
-                '오늘의 루틴',
+                'DevRoutine',
                 style: GoogleFonts.sourceCodePro(
                   fontSize: AppFonts.h1,
                   fontWeight: AppFonts.bold,
@@ -93,30 +85,48 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: AppSizes.md),
-              Text(
-                '아직 등록된 루틴이 없습니다.',
-                style: GoogleFonts.sourceCodePro(
-                  fontSize: AppFonts.body,
-                  color: AppColors.onBackground.withOpacity(0.7),
-                ),
-              ),
-              const Spacer(),
-              Center(
-                child: ElevatedButton(
-                  onPressed: () {
-                    // TODO: 루틴 추가 화면으로 이동
-                  },
-                  child: Text(
-                    '루틴 추가하기',
-                    style: GoogleFonts.sourceCodePro(
-                      fontWeight: AppFonts.medium,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSizes.lg),
+              _buildEmptyState(),
             ],
           ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // TODO: 루틴 추가 화면으로 이동
+        },
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Expanded(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.task_alt,
+              size: AppSizes.iconLg * 2,
+              color: AppColors.textSecondary,
+            ),
+            const SizedBox(height: AppSizes.lg),
+            Text(
+              '아직 등록된 루틴이 없습니다',
+              style: GoogleFonts.sourceCodePro(
+                fontSize: AppFonts.body,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: AppSizes.md),
+            Text(
+              '새로운 루틴을 추가해보세요',
+              style: GoogleFonts.sourceCodePro(
+                fontSize: AppFonts.caption,
+                color: AppColors.textSecondary.withOpacity(0.7),
+              ),
+            ),
+          ],
         ),
       ),
     );

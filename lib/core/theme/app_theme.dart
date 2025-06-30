@@ -26,7 +26,14 @@ class AppTheme {
         foregroundColor: AppColors.onSurface,
         elevation: 0,
       ),
-      cardTheme: const CardTheme(color: AppColors.surface, elevation: 0),
+      cardTheme: const CardThemeData(
+        color: AppColors.surface,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(8)),
+        ),
+      ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           foregroundColor: AppColors.onPrimary,
