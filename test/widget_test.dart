@@ -14,7 +14,7 @@ void main() {
   testWidgets('DevRoutine app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(
-      const ProviderScope(
+      ProviderScope(
         child: DevRoutineApp(),
       ),
     );

@@ -1,24 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'core/constants/app_colors.dart';
-import 'core/constants/app_sizes.dart';
-import 'core/constants/app_fonts.dart';
+import 'core/routing/app_router.dart';
+import 'features/routine/data/models/routine_model.dart';
+import 'features/routine/domain/entities/routine.dart';
 
-void main() {
-  runApp(
-    const ProviderScope(
-      child: DevRoutineApp(),
-    ),
-  );
+class DateTimeAdapter extends TypeAdapter<DateTime> {
+  @override
+  final typeId = 1;
+
+  @override
+  DateTime read(BinaryReader reader) {
+    final timestamp = reader.readInt();
+    return DateTime.fromMillisecondsSinceEpoch(timestamp);
+  }
+
+  @override
+  void write(BinaryWriter writer, DateTime obj) {
+    writer.writeInt(obj.millisecondsSinceEpoch);
+  }
 }
 
+class PriorityAdapter extends TypeAdapter<Priority> {
+  @override
+  final typeId = 2;
+
+  @override
+  Priority read(BinaryReader reader) {
+    final value = reader.readString();
+    return Priority.values.firstWhere(
+      (priority) => priority.toString().split('.').last.toUpperCase() == value,
+      orElse: () => Priority.medium,
+    );
+  }
+
+  @override
+  void write(BinaryWriter writer, Priority obj) {
+    writer.writeString(obj.toString().split('.').last.toUpperCase());
+  }
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Hive.initFlutter();
+
+  if (!Hive.isAdapterRegistered(0)) {
+    Hive.registerAdapter(RoutineModelAdapter());
+  }
+  if (!Hive.isAdapterRegistered(1)) {
+    Hive.registerAdapter(DateTimeAdapter());
+  }
+  if (!Hive.isAdapterRegistered(2)) {
+    Hive.registerAdapter(PriorityAdapter());
+  }
+
+  await Hive.deleteBoxFromDisk('routines');
+  await Hive.openBox<RoutineModel>('routines');
+
+  runApp(const ProviderScope(child: DevRoutineApp()));
+}
+
+@immutable
 class DevRoutineApp extends StatelessWidget {
   const DevRoutineApp({super.key});
 
+  static final _appRouter = AppRouter();
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
+      routerConfig: _appRouter.config(),
+      debugShowCheckedModeBanner: false,
       title: 'DevRoutine',
       theme: ThemeData.dark().copyWith(
         useMaterial3: true,
@@ -48,86 +103,6 @@ class DevRoutineApp extends StatelessWidget {
           foregroundColor: AppColors.onPrimary,
         ),
         cardColor: AppColors.surfaceLight,
-      ),
-      home: const HomeScreen(),
-    );
-  }
-}
-
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'DevRoutine',
-          style: GoogleFonts.sourceCodePro(
-            fontWeight: AppFonts.bold,
-            fontSize: AppFonts.h3,
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSizes.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: AppSizes.xl),
-              Text(
-                'DevRoutine',
-                style: GoogleFonts.sourceCodePro(
-                  fontSize: AppFonts.h1,
-                  fontWeight: AppFonts.bold,
-                  color: AppColors.onBackground,
-                ),
-              ),
-              const SizedBox(height: AppSizes.md),
-              _buildEmptyState(),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: 루틴 추가 화면으로 이동
-        },
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Expanded(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.task_alt,
-              size: AppSizes.iconLg * 2,
-              color: AppColors.textSecondary,
-            ),
-            const SizedBox(height: AppSizes.lg),
-            Text(
-              '아직 등록된 루틴이 없습니다',
-              style: GoogleFonts.sourceCodePro(
-                fontSize: AppFonts.body,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: AppSizes.md),
-            Text(
-              '새로운 루틴을 추가해보세요',
-              style: GoogleFonts.sourceCodePro(
-                fontSize: AppFonts.caption,
-                color: AppColors.textSecondary.withOpacity(0.7),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
