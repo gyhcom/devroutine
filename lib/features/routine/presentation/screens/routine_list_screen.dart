@@ -1,4 +1,6 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:devroutine/features/routine/presentation/widgets/flush_message.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/routing/app_router.dart';
@@ -66,6 +68,11 @@ class RoutineListScreen extends ConsumerWidget {
                 ref
                     .read(routineNotifierProvider.notifier)
                     .updateRoutine(updatedRoutine);
+                showTopMessage(
+                    context,
+                    updatedRoutine.isActive
+                        ? '✅ 루틴이 활성화되었습니다!'
+                        : '✅ 루틴이 비활성화되었습니다!');
               },
               onDelete: () {
                 ref

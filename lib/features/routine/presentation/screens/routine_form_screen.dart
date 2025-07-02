@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:devroutine/features/routine/presentation/widgets/flush_message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/routine.dart';
@@ -256,7 +257,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
     }
   }
 
-  void _saveRoutine() {
+  Future<void> _saveRoutine() async {
     if (_formKey.currentState!.validate()) {
       final routine = widget.routine == null
           ? Routine.create(
@@ -282,8 +283,10 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
 
       if (widget.routine == null) {
         ref.read(routineNotifierProvider.notifier).createRoutine(routine);
+        await showTopMessage(context, '✅ 루틴이 생성되었습니다!');
       } else {
         ref.read(routineNotifierProvider.notifier).updateRoutine(routine);
+        await showTopMessage(context, '✅ 루틴이 업데이트되었습니다!');
       }
 
       context.router.pop();
