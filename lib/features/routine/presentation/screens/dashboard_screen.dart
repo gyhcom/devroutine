@@ -1,7 +1,8 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:devroutine/core/routing/app_router.dart';
 import 'package:devroutine/features/routine/presentation/providers/routine_provider.dart';
-import 'package:devroutine/features/routine/presentation/widgets/routine_list_item.dart';
+import 'package:devroutine/features/routine/presentation/utils/priority_color_util.dart';
+import 'package:devroutine/features/routine/presentation/widgets/routine_card.dart';
 import 'package:devroutine/features/routine/presentation/widgets/today_summary_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,7 +16,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('DevRoutine 대시보드'),
+        title: const Text('MyRoutines Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -36,7 +37,7 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 16),
             _buildGoToRoutineList(context),
             const SizedBox(height: 16),
-            _buildTodayRoutines(),
+            _buildTodayRoutines(context, ref),
           ],
         ),
       ),
@@ -45,11 +46,11 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildGreeting() {
     final now = DateTime.now();
-    final formattedDate = DateFormat('yyyy년 M월 d일 EEEE', 'ko_KR').format(now);
+    final formattedDate = DateFormat('MMMM d, yyyy (EEEE)').format(now);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('안녕하세요, 개발자님 👋',
+        const Text('Hello, Developer 👋',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         Text(formattedDate, style: const TextStyle(color: Colors.grey)),
       ],
@@ -60,16 +61,16 @@ class DashboardScreen extends ConsumerWidget {
     return ElevatedButton.icon(
       onPressed: () => context.router.push(const RoutineListRoute()),
       icon: const Icon(Icons.list),
-      label: const Text('루틴 전체 보기'),
+      label: const Text('View All Routines'),
     );
   }
 
-  Widget _buildTodayRoutines() {
+  Widget _buildTodayRoutines(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '오늘의 루틴',
+          'Today\'s Routines',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
@@ -79,28 +80,45 @@ class DashboardScreen extends ConsumerWidget {
                   loaded: (routines) {
                     if (routines.isEmpty) {
                       return const Center(
-                        child: Text('오늘의 루틴이 없습니다.'),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: Text('No routines for today'),
+                        ),
                       );
                     }
-                    return ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: routines.length,
-                      itemBuilder: (context, index) {
-                        final routine = routines[index];
-                        return RoutineListItem(
-                          routine: routine,
-                          onTap: () => context.router
-                              .push(RoutineFormRoute(routine: routine)),
-                          onToggleActive: () => ref
-                              .read(routineNotifierProvider.notifier)
-                              .toggleRoutineActive(routine.id),
-                          onDelete: () => ref
-                              .read(routineNotifierProvider.notifier)
-                              .deleteRoutine(routine.id),
-                          borderColor: Theme.of(context).primaryColor,
-                        );
-                      },
+
+                    // Calculate grid dimensions
+                    const crossAxisCount = 3;
+                    final itemCount = routines.length;
+
+                    // Calculate grid height based on number of items
+                    final rowCount = (itemCount / crossAxisCount).ceil();
+                    final gridHeight = rowCount * 120.0; // 각 카드의 높이를 120으로 설정
+
+                    return SizedBox(
+                      height: gridHeight,
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 1, // Square aspect ratio
+                        ),
+                        itemCount: itemCount,
+                        itemBuilder: (context, index) {
+                          final routine = routines[index];
+                          return RoutineCard(
+                            routine: routine,
+                            borderColor:
+                                getPriorityBorderColor(routine.priority),
+                            onTap: () => context.router
+                                .push(RoutineFormRoute(routine: routine)),
+                          );
+                        },
+                      ),
                     );
                   },
                   orElse: () => const Center(

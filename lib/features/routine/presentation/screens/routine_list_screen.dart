@@ -73,8 +73,8 @@ class RoutineListScreen extends ConsumerWidget {
                 showTopMessage(
                     context,
                     updatedRoutine.isActive
-                        ? '✅ 루틴이 활성화되었습니다!'
-                        : '✅ 루틴이 비활성화되었습니다!');
+                        ? '✅ Routine activated!'
+                        : '✅ Routine deactivated!');
               },
               onDelete: () {
                 ref

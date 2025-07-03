@@ -29,8 +29,8 @@ class TodaySummaryCard extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildItem('📌 오늘 루틴', '$todayCount개'),
-                    _buildItem('✅ 완료', '$doneCount개'),
+                    _buildItem('📌 Today\'s Tasks', '$todayCount'),
+                    _buildItem('✅ Completed', '$doneCount'),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -45,7 +45,7 @@ class TodaySummaryCard extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${progress.toStringAsFixed(1)}% 완료',
+                  '${progress.toStringAsFixed(1)}% Complete',
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 12,
