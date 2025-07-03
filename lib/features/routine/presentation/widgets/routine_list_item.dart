@@ -6,6 +6,7 @@ class RoutineListItem extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onToggleActive;
   final VoidCallback onDelete;
+  final Color borderColor;
 
   const RoutineListItem({
     super.key,
@@ -13,50 +14,66 @@ class RoutineListItem extends StatelessWidget {
     required this.onTap,
     required this.onToggleActive,
     required this.onDelete,
+    required this.borderColor,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _buildPriorityIndicator(),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      routine.title,
-                      style: Theme.of(context).textTheme.titleLarge,
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: borderColor,
+          width: 2,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        margin: EdgeInsets.zero,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _buildPriorityIndicator(),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        routine.title,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                     ),
-                  ),
-                  Switch(
-                    value: routine.isActive,
-                    onChanged: (_) => onToggleActive(),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete),
-                    onPressed: () => _showDeleteConfirmation(context),
+                    Switch(
+                      value: routine.isActive,
+                      onChanged: (_) => onToggleActive(),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () => _showDeleteConfirmation(context),
+                    ),
+                  ],
+                ),
+                if (routine.memo != null && routine.memo!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    routine.memo!,
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
-              ),
-              if (routine.memo != null && routine.memo!.isNotEmpty) ...[
                 const SizedBox(height: 8),
-                Text(
-                  routine.memo!,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
+                _buildProgressIndicator(context),
+                const SizedBox(height: 8),
+                _buildTags(),
               ],
-              const SizedBox(height: 8),
-              _buildProgressIndicator(context),
-              const SizedBox(height: 8),
-              _buildTags(),
-            ],
+            ),
           ),
         ),
       ),

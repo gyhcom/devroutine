@@ -1,4 +1,5 @@
 import 'package:auto_route/auto_route.dart';
+import 'package:devroutine/features/routine/presentation/utils/priority_color_util.dart';
 import 'package:devroutine/features/routine/presentation/widgets/flush_message.dart';
 
 import 'package:flutter/material.dart';
@@ -60,6 +61,7 @@ class RoutineListScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: RoutineListItem(
               routine: routine,
+              borderColor: getPriorityBorderColor(routine.priority),
               onTap: () {
                 context.router.push(RoutineFormRoute(routine: routine));
               },

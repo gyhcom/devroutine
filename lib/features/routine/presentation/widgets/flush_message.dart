@@ -13,7 +13,7 @@ Future<void> showTopMessage(BuildContext context, String message) async {
     margin: const EdgeInsets.all(12),
     borderRadius: BorderRadius.circular(12),
     backgroundColor: Colors.grey[900]!,
-    duration: const Duration(seconds: 2),
+    duration: const Duration(seconds: 1),
     flushbarPosition: FlushbarPosition.TOP,
     animationDuration: const Duration(milliseconds: 400),
   );
