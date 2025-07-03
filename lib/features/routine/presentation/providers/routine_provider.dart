@@ -199,4 +199,17 @@ class RoutineNotifier extends _$RoutineNotifier {
   Future<void> refreshRoutines() async {
     await _loadRoutines();
   }
+
+  Future<void> toggleRoutineActive(String id) async {
+    state.whenOrNull(loaded: (routines) {
+      final index = routines.indexWhere((r) => r.id == id);
+      if (index != -1) {
+        final routine = routines[index];
+        final updatedRoutine = routine.copyWith(isActive: !routine.isActive);
+        final updatedRoutines = [...routines];
+        updatedRoutines[index] = updatedRoutine;
+        state = RoutineState.loaded(updatedRoutines);
+      }
+    });
+  }
 }

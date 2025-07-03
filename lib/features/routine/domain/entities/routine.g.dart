@@ -44,7 +44,7 @@ Map<String, dynamic> _$$RoutineImplToJson(_$RoutineImpl instance) =>
     };
 
 const _$PriorityEnumMap = {
-  Priority.high: 'HIGH',
-  Priority.medium: 'MEDIUM',
   Priority.low: 'LOW',
+  Priority.medium: 'MEDIUM',
+  Priority.high: 'HIGH',
 };

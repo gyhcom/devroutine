@@ -6,6 +6,7 @@ import 'core/constants/app_colors.dart';
 import 'core/routing/app_router.dart';
 import 'features/routine/data/models/routine_model.dart';
 import 'features/routine/domain/entities/routine.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 class DateTimeAdapter extends TypeAdapter<DateTime> {
   @override
@@ -43,8 +44,9 @@ class PriorityAdapter extends TypeAdapter<Priority> {
 }
 
 void main() async {
+  //메인 시작
   WidgetsFlutterBinding.ensureInitialized();
-
+  // Hive 초기화
   await Hive.initFlutter();
 
   if (!Hive.isAdapterRegistered(0)) {
@@ -59,6 +61,8 @@ void main() async {
 
   await Hive.deleteBoxFromDisk('routines');
   await Hive.openBox<RoutineModel>('routines');
+
+  await initializeDateFormatting('ko_KR', ''); // 이게 핵심!
 
   runApp(const ProviderScope(child: DevRoutineApp()));
 }
