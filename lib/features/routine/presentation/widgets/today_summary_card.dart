@@ -16,13 +16,28 @@ class TodaySummaryCard extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         child: routineState.maybeWhen(
           loaded: (routines) {
-            final todayCount = routines.length;
-            final doneCount = routines
-                .where(
-                    (r) => r.currentCompletionCount >= r.targetCompletionCount)
-                .length;
+            // 오늘의 루틴만 필터링
+            final todayRoutines = ref
+                .read(routineNotifierProvider.notifier)
+                .getTodayRoutines(routines);
+            final todayCount = todayRoutines.length;
+            final completedCount = ref
+                .read(routineNotifierProvider.notifier)
+                .getCompletedRoutinesCount(todayRoutines);
+
+            // 진행률 계산
             final progress =
-                todayCount > 0 ? (doneCount / todayCount) * 100 : 0.0;
+                todayCount > 0 ? (completedCount / todayCount) * 100 : 0.0;
+
+            // 진행률에 따른 색상 설정
+            Color progressColor;
+            if (progress >= 100) {
+              progressColor = Colors.green;
+            } else if (progress >= 50) {
+              progressColor = Colors.orange;
+            } else {
+              progressColor = Theme.of(context).primaryColor;
+            }
 
             return Column(
               children: [
@@ -30,27 +45,35 @@ class TodaySummaryCard extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     _buildItem('📌 Today\'s Tasks', '$todayCount'),
-                    _buildItem('✅ Completed', '$doneCount'),
+                    _buildItem('✅ Completed', '$completedCount'),
                   ],
                 ),
                 const SizedBox(height: 12),
                 LinearProgressIndicator(
                   value: progress / 100,
                   backgroundColor: Colors.grey[200],
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    progress == 100
-                        ? Colors.green
-                        : Theme.of(context).primaryColor,
-                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${progress.toStringAsFixed(1)}% Complete',
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: progressColor,
                     fontSize: 12,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (progress == 100) ...[
+                  const SizedBox(height: 8),
+                  const Text(
+                    '🎉 All tasks completed! Great job!',
+                    style: TextStyle(
+                      color: Colors.green,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ]
               ],
             );
           },

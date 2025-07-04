@@ -40,6 +40,22 @@ class RoutineNotifier extends _$RoutineNotifier {
       });
   }
 
+  // 오늘 루틴만 필터링하는 메서드
+  List<Routine> getTodayRoutines(List<Routine> routines) {
+    final now = DateTime.now();
+    return routines.where((routine) {
+      // 루틴의 유효 기간 체크
+      final isInDateRange = routine.startDate.isBefore(now) &&
+          (routine.endDate == null || routine.endDate!.isAfter(now));
+      return isInDateRange && routine.isActive;
+    }).toList();
+  }
+
+  // 오늘 완료된 루틴 수를 계산하는 메서드
+  int getCompletedRoutinesCount(List<Routine> routines) {
+    return routines.where((routine) => routine.isCompletedToday).length;
+  }
+
   @override
   RoutineState build() {
     final repository = ref.read(routineRepositoryProvider);
@@ -65,6 +81,107 @@ class RoutineNotifier extends _$RoutineNotifier {
     } catch (e) {
       state = RoutineState.error(e.toString());
     }
+  }
+
+  // 루틴 완료 메서드
+  Future<void> markRoutineAsCompleted(String id) async {
+    state.whenOrNull(
+      loaded: (routines) async {
+        try {
+          final index = routines.indexWhere((r) => r.id == id);
+          if (index == -1) return;
+
+          final routine = routines[index];
+          if (routine.isCompletedToday) return; // 이미 완료된 상태면 아무 동작 안함
+
+          final updatedRoutine = routine.markAsCompleted();
+
+          // UI 즉시 업데이트
+          final updatedRoutines = List<Routine>.from(routines);
+          updatedRoutines[index] = updatedRoutine;
+          state = RoutineState.loaded(updatedRoutines);
+
+          // 백엔드 업데이트
+          final result = await _updateRoutineUseCase.execute(updatedRoutine);
+
+          if (result case ResultFailure(failure: final failure)) {
+            // 실패 시 이전 상태로 복원
+            final revertedRoutines = List<Routine>.from(routines);
+            revertedRoutines[index] = routine;
+            state = RoutineState.loaded(revertedRoutines);
+
+            // 에러 메시지 표시
+            Future.microtask(() {
+              state = RoutineState.error(failure.message);
+              Future.delayed(const Duration(seconds: 2), () {
+                state = RoutineState.loaded(revertedRoutines);
+              });
+            });
+          }
+        } catch (e) {
+          state = RoutineState.error(e.toString());
+        }
+      },
+    );
+  }
+
+  // 루틴 미완료 메서드
+  Future<void> markRoutineAsIncomplete(String id) async {
+    state.whenOrNull(
+      loaded: (routines) async {
+        try {
+          final index = routines.indexWhere((r) => r.id == id);
+          if (index == -1) return;
+
+          final routine = routines[index];
+          if (!routine.isCompletedToday) return; // 이미 미완료 상태면 아무 동작 안함
+
+          final updatedRoutine = routine.markAsIncomplete();
+
+          // UI 즉시 업데이트
+          final updatedRoutines = List<Routine>.from(routines);
+          updatedRoutines[index] = updatedRoutine;
+          state = RoutineState.loaded(updatedRoutines);
+
+          // 백엔드 업데이트
+          final result = await _updateRoutineUseCase.execute(updatedRoutine);
+
+          if (result case ResultFailure(failure: final failure)) {
+            // 실패 시 이전 상태로 복원
+            final revertedRoutines = List<Routine>.from(routines);
+            revertedRoutines[index] = routine;
+            state = RoutineState.loaded(revertedRoutines);
+
+            // 에러 메시지 표시
+            Future.microtask(() {
+              state = RoutineState.error(failure.message);
+              Future.delayed(const Duration(seconds: 2), () {
+                state = RoutineState.loaded(revertedRoutines);
+              });
+            });
+          }
+        } catch (e) {
+          state = RoutineState.error(e.toString());
+        }
+      },
+    );
+  }
+
+  // 루틴 완료 토글 메서드
+  Future<void> toggleRoutineCompletion(String id) async {
+    state.whenOrNull(
+      loaded: (routines) async {
+        final index = routines.indexWhere((r) => r.id == id);
+        if (index == -1) return;
+
+        final routine = routines[index];
+        if (routine.isCompletedToday) {
+          await markRoutineAsIncomplete(id);
+        } else {
+          await markRoutineAsCompleted(id);
+        }
+      },
+    );
   }
 
   Future<void> createRoutine(Routine routine) async {

@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:devroutine/core/routing/app_router.dart';
+import 'package:devroutine/core/widgets/banner_ad_widget.dart';
 import 'package:devroutine/features/routine/presentation/providers/routine_provider.dart';
 import 'package:devroutine/features/routine/presentation/utils/priority_color_util.dart';
 import 'package:devroutine/features/routine/presentation/widgets/routine_card.dart';
@@ -38,6 +39,8 @@ class DashboardScreen extends ConsumerWidget {
             _buildGoToRoutineList(context),
             const SizedBox(height: 16),
             _buildTodayRoutines(context, ref),
+            const SizedBox(height: 16),
+            const BannerAdWidget(), // 배너 광고 추가
           ],
         ),
       ),

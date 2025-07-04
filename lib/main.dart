@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'core/constants/app_colors.dart';
 import 'core/routing/app_router.dart';
+import 'core/services/ad_service.dart';
 import 'features/routine/data/models/routine_model.dart';
 import 'features/routine/domain/entities/routine.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -46,6 +48,10 @@ class PriorityAdapter extends TypeAdapter<Priority> {
 void main() async {
   //메인 시작
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 광고 초기화
+  await MobileAds.instance.initialize();
+
   // Hive 초기화
   await Hive.initFlutter();
 

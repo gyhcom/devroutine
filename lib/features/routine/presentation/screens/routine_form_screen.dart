@@ -20,6 +20,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
   late TextEditingController _titleController;
   late TextEditingController _memoController;
   late Priority _priority;
+  late RoutineType _routineType;
 
   @override
   void initState() {
@@ -27,6 +28,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
     _titleController = TextEditingController(text: widget.routine?.title);
     _memoController = TextEditingController(text: widget.routine?.memo);
     _priority = widget.routine?.priority ?? Priority.medium;
+    _routineType = widget.routine?.routineType ?? RoutineType.daily;
   }
 
   @override
@@ -71,6 +73,62 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
               ),
               maxLines: 3,
             ),
+            const SizedBox(height: 16),
+
+            // 루틴 타입 선택
+            Card(
+              elevation: 0,
+              color: Colors.grey.shade100,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Routine Type',
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Colors.black87),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildRoutineTypeOption(
+                            title: 'Daily',
+                            description: 'Reset every day',
+                            icon: Icons.refresh,
+                            color: Colors.teal,
+                            isSelected: _routineType == RoutineType.daily,
+                            onTap: () => setState(() {
+                              _routineType = RoutineType.daily;
+                            }),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildRoutineTypeOption(
+                            title: '3-Day',
+                            description: 'Lasts for 3 days',
+                            icon: Icons.calendar_today,
+                            color: Colors.blue,
+                            isSelected: _routineType == RoutineType.threeDay,
+                            onTap: () => setState(() {
+                              _routineType = RoutineType.threeDay;
+                            }),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             const SizedBox(height: 16),
             DropdownButtonFormField<Priority>(
               value: _priority,
@@ -135,19 +193,80 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
     );
   }
 
+  Widget _buildRoutineTypeOption({
+    required String title,
+    required String description,
+    required IconData icon,
+    required Color color,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? color : Colors.grey.shade300,
+            width: 2,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _saveRoutine() async {
     if (_formKey.currentState!.validate()) {
       final now = DateTime.now();
       final routine = widget.routine == null
-          ? Routine.create(
-              title: _titleController.text.trim(),
-              memo: _memoController.text.trim(),
-              tags: [],
-              targetCompletionCount: 1,
-              startDate: now,
-              endDate: DateTime(now.year, now.month, now.day, 23, 59, 59),
-              priority: _priority,
-            )
+          ? (_routineType == RoutineType.threeDay
+              ? Routine.createThreeDayRoutine(
+                  title: _titleController.text.trim(),
+                  memo: _memoController.text.trim(),
+                  tags: [],
+                  targetCompletionCount: 1,
+                  startDate: now,
+                  priority: _priority,
+                )
+              : Routine.create(
+                  title: _titleController.text.trim(),
+                  memo: _memoController.text.trim(),
+                  tags: [],
+                  targetCompletionCount: 1,
+                  startDate: now,
+                  endDate: DateTime(now.year, now.month, now.day, 23, 59, 59),
+                  priority: _priority,
+                  routineType: RoutineType.daily,
+                ))
           : widget.routine!.copyWith(
               title: _titleController.text.trim(),
               memo: _memoController.text.trim(),
