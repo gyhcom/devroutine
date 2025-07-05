@@ -105,7 +105,7 @@ class RoutineCard extends ConsumerWidget {
                           size: 16,
                         ),
                         label: Text(
-                          isCompleted ? 'Done' : 'To Do',
+                          isCompleted ? '완료' : '할 일',
                           style: const TextStyle(
                             fontSize: 12,
                             color: Colors.white,

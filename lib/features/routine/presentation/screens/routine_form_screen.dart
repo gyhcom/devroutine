@@ -42,7 +42,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.routine == null ? 'New Routine' : 'Edit Routine'),
+        title: Text(widget.routine == null ? '새 루틴' : '루틴 수정'),
       ),
       body: Form(
         key: _formKey,
@@ -52,13 +52,13 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
             TextFormField(
               controller: _titleController,
               decoration: const InputDecoration(
-                labelText: 'Today\'s Task',
-                hintText: 'ex) Solve one algorithm problem',
+                labelText: '오늘의 할 일',
+                hintText: '예) 알고리즘 문제 1개 풀기',
                 border: OutlineInputBorder(),
               ),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a task';
+                  return '할 일을 입력해주세요';
                 }
                 return null;
               },
@@ -67,8 +67,8 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
             TextFormField(
               controller: _memoController,
               decoration: const InputDecoration(
-                labelText: 'Memo (Optional)',
-                hintText: 'Add additional notes',
+                labelText: '메모 (선택사항)',
+                hintText: '추가 메모를 입력하세요',
                 border: OutlineInputBorder(),
               ),
               maxLines: 3,
@@ -88,7 +88,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Routine Type',
+                      '루틴 타입',
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -99,8 +99,8 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
                       children: [
                         Expanded(
                           child: _buildRoutineTypeOption(
-                            title: 'Daily',
-                            description: 'Reset every day',
+                            title: '일일 루틴',
+                            description: '매일 리셋',
                             icon: Icons.refresh,
                             color: Colors.teal,
                             isSelected: _routineType == RoutineType.daily,
@@ -112,8 +112,8 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _buildRoutineTypeOption(
-                            title: '3-Day',
-                            description: 'Lasts for 3 days',
+                            title: '3일 루틴',
+                            description: '3일간 지속',
                             icon: Icons.calendar_today,
                             color: Colors.blue,
                             isSelected: _routineType == RoutineType.threeDay,
@@ -133,7 +133,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
             DropdownButtonFormField<Priority>(
               value: _priority,
               decoration: const InputDecoration(
-                labelText: 'Priority',
+                labelText: '우선순위',
                 border: OutlineInputBorder(),
               ),
               items: Priority.values.map((priority) {
@@ -142,17 +142,17 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
                 Color color;
                 switch (priority) {
                   case Priority.high:
-                    label = 'High';
+                    label = '높음';
                     icon = Icons.priority_high;
                     color = Colors.red;
                     break;
                   case Priority.medium:
-                    label = 'Medium';
+                    label = '보통';
                     icon = Icons.remove;
                     color = Colors.orange;
                     break;
                   case Priority.low:
-                    label = 'Low';
+                    label = '낮음';
                     icon = Icons.arrow_downward;
                     color = Colors.green;
                     break;
@@ -183,7 +183,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
               child: Text(
-                widget.routine == null ? 'Create Routine' : 'Update Routine',
+                widget.routine == null ? '루틴 생성' : '루틴 수정',
                 style: const TextStyle(fontSize: 16),
               ),
             ),
@@ -276,10 +276,10 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
 
       if (widget.routine == null) {
         ref.read(routineNotifierProvider.notifier).createRoutine(routine);
-        await showTopMessage(context, '✅ Routine created successfully!');
+        await showTopMessage(context, '✅ 루틴이 생성되었습니다!');
       } else {
         ref.read(routineNotifierProvider.notifier).updateRoutine(routine);
-        await showTopMessage(context, '✅ Routine updated successfully!');
+        await showTopMessage(context, '✅ 루틴이 수정되었습니다!');
       }
 
       context.router.pop();

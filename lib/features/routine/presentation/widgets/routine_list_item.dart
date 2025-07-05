@@ -105,7 +105,7 @@ class RoutineListItem extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Progress: ${routine.currentCompletionCount}/${routine.targetCompletionCount}',
+          '진행률: ${routine.currentCompletionCount}/${routine.targetCompletionCount}',
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 4),
@@ -133,16 +133,16 @@ class RoutineListItem extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Routine'),
-        content: Text('Are you sure you want to delete "${routine.title}"?'),
+        title: const Text('루틴 삭제'),
+        content: Text('정말로 "${routine.title}" 루틴을 삭제하시겠습니까?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const Text('취소'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: const Text('삭제'),
           ),
         ],
       ),

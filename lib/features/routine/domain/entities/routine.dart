@@ -144,10 +144,10 @@ class Routine with _$Routine {
   // 3일 루틴의 상태 텍스트 (D-2, D-1, D-DAY, 완료됨)
   String get threeDayStatusText {
     if (!isThreeDayRoutine) return '';
-    if (isCompletedToday) return 'Completed';
+    if (isCompletedToday) return '완료됨';
 
     final days = remainingDays;
-    if (days < 0) return 'Expired';
+    if (days < 0) return '만료됨';
     if (days == 0) return 'D-DAY';
     return 'D-$days';
   }

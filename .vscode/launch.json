@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        
+      {
+        "name": "Flutter: devroutine (iPhone 16 Pro Simulator)",
+        "request": "launch",
+        "type": "dart",
+        "program": "lib/main.dart",
+        "deviceId": "0A970188-7DE4-46D2-9F8C-8708EBC441F6"
+      }
+    ]
+  }

@@ -19,7 +19,7 @@ class RoutineListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Routines'),
+        title: const Text('나의 루틴'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -29,10 +29,10 @@ class RoutineListScreen extends ConsumerWidget {
         ],
       ),
       body: routineState.when(
-        initial: () => const Center(child: Text('Start adding your routines!')),
+        initial: () => const Center(child: Text('루틴 추가를 시작해보세요!')),
         loading: () => const Center(child: CircularProgressIndicator()),
         loaded: (routines) => _buildRoutineList(context, ref, routines),
-        error: (message) => Center(child: Text('Error: $message')),
+        error: (message) => Center(child: Text('오류: $message')),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -46,7 +46,7 @@ class RoutineListScreen extends ConsumerWidget {
   Widget _buildRoutineList(
       BuildContext context, WidgetRef ref, List<Routine> routines) {
     if (routines.isEmpty) {
-      return const Center(child: Text('No routines yet. Start by adding one!'));
+      return const Center(child: Text('아직 루틴이 없습니다. 하나 추가해보세요!'));
     }
 
     return RefreshIndicator(
@@ -73,8 +73,8 @@ class RoutineListScreen extends ConsumerWidget {
                 showTopMessage(
                     context,
                     updatedRoutine.isActive
-                        ? '✅ Routine activated!'
-                        : '✅ Routine deactivated!');
+                        ? '✅ 루틴이 활성화되었습니다!'
+                        : '✅ 루틴이 비활성화되었습니다!');
               },
               onDelete: () {
                 ref

@@ -1,64 +1,117 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class AdService {
   static final AdService _instance = AdService._internal();
-
   factory AdService() => _instance;
 
   AdService._internal();
 
-  Future<void> initialize() async {
-    await MobileAds.instance.initialize();
+  bool _isInitialized = false;
+  int _retryAttempt = 0;
+  static const int _maxRetryAttempt = 3;
 
-    // 테스트 모드 설정
-    if (kDebugMode) {
-      MobileAds.instance.updateRequestConfiguration(
-        RequestConfiguration(
-          testDeviceIds: ['kGADSimulatorID'],
-        ),
-      );
+  BannerAd? _cachedBannerAd;
+
+  /// 초기화
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+
+    try {
+      await MobileAds.instance.initialize();
+
+      if (kDebugMode) {
+        await MobileAds.instance.updateRequestConfiguration(
+          RequestConfiguration(testDeviceIds: ['kGADSimulatorID']),
+        );
+      }
+
+      _isInitialized = true;
+      debugPrint('✅ AdMob 초기화 완료');
+    } catch (e) {
+      debugPrint('❌ AdMob 초기화 실패: $e');
     }
   }
 
-  // 배너 광고 로드
+  /// 배너 광고 로드 (재사용 지원)
   Future<BannerAd?> loadBannerAd() async {
-    final String adUnitId = _getBannerAdUnitId();
+    if (_cachedBannerAd != null) return _cachedBannerAd;
+
+    if (!_isInitialized) await initialize();
+
+    _retryAttempt = 0;
+    final ad = await _loadBannerAdWithRetry();
+    _cachedBannerAd = ad;
+    return ad;
+  }
+
+  /// 광고 로딩 재시도 로직
+  Future<BannerAd?> _loadBannerAdWithRetry() async {
+    if (_retryAttempt >= _maxRetryAttempt) {
+      if (kDebugMode) {
+        debugPrint('❌ 광고 로드 최대 재시도 초과 ($_maxRetryAttempt회)');
+      }
+      return null;
+    }
+
+    final completer = Completer<BannerAd?>();
+    final adUnitId = _getBannerAdUnitId();
 
     final BannerAd bannerAd = BannerAd(
       adUnitId: adUnitId,
-      size: AdSize.banner,
+      size: AdSize
+          .banner, // 또는 AdSize.smartBanner, AnchoredAdaptiveBannerAdSize 사용 가능
       request: const AdRequest(),
       listener: BannerAdListener(
         onAdLoaded: (Ad ad) {
-          debugPrint('Banner ad loaded: ${ad.adUnitId}');
+          if (kDebugMode) {
+            debugPrint('✅ 광고 로드 성공: ${ad.adUnitId}');
+          }
+          completer.complete(ad as BannerAd);
         },
-        onAdFailedToLoad: (Ad ad, LoadAdError error) {
-          debugPrint('Banner ad failed to load: ${error.message}');
+        onAdFailedToLoad: (Ad ad, LoadAdError error) async {
           ad.dispose();
+          if (kDebugMode) {
+            debugPrint('⚠️ 광고 로드 실패 ($_retryAttempt): ${error.message}');
+          }
+
+          _retryAttempt++;
+          // 재시도 간격을 늘림 (1초 → 5초)
+          Future.delayed(const Duration(seconds: 5), () async {
+            final retryAd = await _loadBannerAdWithRetry();
+            completer.complete(retryAd);
+          });
         },
-        onAdOpened: (Ad ad) => debugPrint('Banner ad opened'),
-        onAdClosed: (Ad ad) => debugPrint('Banner ad closed'),
+        onAdOpened: (ad) {
+          if (kDebugMode) debugPrint('📢 광고 클릭됨');
+        },
+        onAdClosed: (ad) {
+          if (kDebugMode) debugPrint('📪 광고 닫힘');
+        },
       ),
     );
 
     try {
       await bannerAd.load();
-      return bannerAd;
+      return completer.isCompleted ? await completer.future : bannerAd;
     } catch (e) {
-      debugPrint('Error loading banner ad: $e');
+      if (kDebugMode) debugPrint('❌ 광고 로딩 중 예외: $e');
+      completer.complete(null);
       return null;
     }
   }
 
-  // 플랫폼별 테스트 광고 ID 반환
+  /// 배너 광고 단위 ID
   String _getBannerAdUnitId() {
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'ca-app-pub-3940256099942544/6300978111'; // 안드로이드 테스트 ID
-    } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-      return 'ca-app-pub-3940256099942544/2934735716'; // iOS 테스트 ID
-    } else {
-      throw UnsupportedError('지원하지 않는 플랫폼입니다');
-    }
+    // 루틴 등록 화면 배너 광고 단위 ID (실제 광고)
+    return 'ca-app-pub-4940948867704473/7365532237';
+  }
+
+  /// 광고 해제 (위젯 dispose 시 호출)
+  void disposeBannerAd() {
+    _cachedBannerAd?.dispose();
+    _cachedBannerAd = null;
+    if (kDebugMode) debugPrint('🗑️ 광고 리소스 해제 완료');
   }
 }

@@ -17,7 +17,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('MyRoutines Dashboard'),
+        title: const Text('나의 루틴 대시보드'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -39,21 +39,22 @@ class DashboardScreen extends ConsumerWidget {
             _buildGoToRoutineList(context),
             const SizedBox(height: 16),
             _buildTodayRoutines(context, ref),
-            const SizedBox(height: 16),
-            const BannerAdWidget(), // 배너 광고 추가
           ],
         ),
+      ),
+      bottomNavigationBar: const SafeArea(
+        child: BannerAdWidget(),
       ),
     );
   }
 
   Widget _buildGreeting() {
     final now = DateTime.now();
-    final formattedDate = DateFormat('MMMM d, yyyy (EEEE)').format(now);
+    final formattedDate = DateFormat('yyyy년 M월 d일 (EEEE)', 'ko_KR').format(now);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Hello, Developer 👋',
+        const Text('안녕하세요, 개발자님! 👋',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         Text(formattedDate, style: const TextStyle(color: Colors.grey)),
       ],
@@ -64,7 +65,7 @@ class DashboardScreen extends ConsumerWidget {
     return ElevatedButton.icon(
       onPressed: () => context.router.push(const RoutineListRoute()),
       icon: const Icon(Icons.list),
-      label: const Text('View All Routines'),
+      label: const Text('전체 루틴 보기'),
     );
   }
 
@@ -73,7 +74,7 @@ class DashboardScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Today\'s Routines',
+          '오늘의 루틴',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
@@ -85,7 +86,7 @@ class DashboardScreen extends ConsumerWidget {
                       return const Center(
                         child: Padding(
                           padding: EdgeInsets.symmetric(vertical: 24),
-                          child: Text('No routines for today'),
+                          child: Text('오늘 할 루틴이 없습니다'),
                         ),
                       );
                     }
