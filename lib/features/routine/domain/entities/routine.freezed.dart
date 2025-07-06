@@ -34,7 +34,9 @@ mixin _$Routine {
   String? get category => throw _privateConstructorUsedError;
   Priority get priority => throw _privateConstructorUsedError;
   DateTime? get completedAt => throw _privateConstructorUsedError;
-  RoutineType get routineType => throw _privateConstructorUsedError;
+  RoutineType get routineType => throw _privateConstructorUsedError; // 루틴 타입 추가
+  String? get groupId => throw _privateConstructorUsedError; // 3일 루틴 그룹 식별자
+  int? get dayNumber => throw _privateConstructorUsedError;
 
   /// Serializes this Routine to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -65,7 +67,9 @@ abstract class $RoutineCopyWith<$Res> {
       String? category,
       Priority priority,
       DateTime? completedAt,
-      RoutineType routineType});
+      RoutineType routineType,
+      String? groupId,
+      int? dayNumber});
 }
 
 /// @nodoc
@@ -98,6 +102,8 @@ class _$RoutineCopyWithImpl<$Res, $Val extends Routine>
     Object? priority = null,
     Object? completedAt = freezed,
     Object? routineType = null,
+    Object? groupId = freezed,
+    Object? dayNumber = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -160,6 +166,14 @@ class _$RoutineCopyWithImpl<$Res, $Val extends Routine>
           ? _value.routineType
           : routineType // ignore: cast_nullable_to_non_nullable
               as RoutineType,
+      groupId: freezed == groupId
+          ? _value.groupId
+          : groupId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dayNumber: freezed == dayNumber
+          ? _value.dayNumber
+          : dayNumber // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -186,7 +200,9 @@ abstract class _$$RoutineImplCopyWith<$Res> implements $RoutineCopyWith<$Res> {
       String? category,
       Priority priority,
       DateTime? completedAt,
-      RoutineType routineType});
+      RoutineType routineType,
+      String? groupId,
+      int? dayNumber});
 }
 
 /// @nodoc
@@ -217,6 +233,8 @@ class __$$RoutineImplCopyWithImpl<$Res>
     Object? priority = null,
     Object? completedAt = freezed,
     Object? routineType = null,
+    Object? groupId = freezed,
+    Object? dayNumber = freezed,
   }) {
     return _then(_$RoutineImpl(
       id: null == id
@@ -279,6 +297,14 @@ class __$$RoutineImplCopyWithImpl<$Res>
           ? _value.routineType
           : routineType // ignore: cast_nullable_to_non_nullable
               as RoutineType,
+      groupId: freezed == groupId
+          ? _value.groupId
+          : groupId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dayNumber: freezed == dayNumber
+          ? _value.dayNumber
+          : dayNumber // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -301,7 +327,9 @@ class _$RoutineImpl extends _Routine {
       this.category,
       this.priority = Priority.medium,
       this.completedAt,
-      this.routineType = RoutineType.daily})
+      this.routineType = RoutineType.daily,
+      this.groupId,
+      this.dayNumber})
       : _tags = tags,
         super._();
 
@@ -346,10 +374,16 @@ class _$RoutineImpl extends _Routine {
   @override
   @JsonKey()
   final RoutineType routineType;
+// 루틴 타입 추가
+  @override
+  final String? groupId;
+// 3일 루틴 그룹 식별자
+  @override
+  final int? dayNumber;
 
   @override
   String toString() {
-    return 'Routine(id: $id, title: $title, memo: $memo, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, tags: $tags, targetCompletionCount: $targetCompletionCount, currentCompletionCount: $currentCompletionCount, startDate: $startDate, endDate: $endDate, category: $category, priority: $priority, completedAt: $completedAt, routineType: $routineType)';
+    return 'Routine(id: $id, title: $title, memo: $memo, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, tags: $tags, targetCompletionCount: $targetCompletionCount, currentCompletionCount: $currentCompletionCount, startDate: $startDate, endDate: $endDate, category: $category, priority: $priority, completedAt: $completedAt, routineType: $routineType, groupId: $groupId, dayNumber: $dayNumber)';
   }
 
   @override
@@ -381,7 +415,10 @@ class _$RoutineImpl extends _Routine {
             (identical(other.completedAt, completedAt) ||
                 other.completedAt == completedAt) &&
             (identical(other.routineType, routineType) ||
-                other.routineType == routineType));
+                other.routineType == routineType) &&
+            (identical(other.groupId, groupId) || other.groupId == groupId) &&
+            (identical(other.dayNumber, dayNumber) ||
+                other.dayNumber == dayNumber));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -402,7 +439,9 @@ class _$RoutineImpl extends _Routine {
       category,
       priority,
       completedAt,
-      routineType);
+      routineType,
+      groupId,
+      dayNumber);
 
   /// Create a copy of Routine
   /// with the given fields replaced by the non-null parameter values.
@@ -436,7 +475,9 @@ abstract class _Routine extends Routine {
       final String? category,
       final Priority priority,
       final DateTime? completedAt,
-      final RoutineType routineType}) = _$RoutineImpl;
+      final RoutineType routineType,
+      final String? groupId,
+      final int? dayNumber}) = _$RoutineImpl;
   const _Routine._() : super._();
 
   factory _Routine.fromJson(Map<String, dynamic> json) = _$RoutineImpl.fromJson;
@@ -470,7 +511,11 @@ abstract class _Routine extends Routine {
   @override
   DateTime? get completedAt;
   @override
-  RoutineType get routineType;
+  RoutineType get routineType; // 루틴 타입 추가
+  @override
+  String? get groupId; // 3일 루틴 그룹 식별자
+  @override
+  int? get dayNumber;
 
   /// Create a copy of Routine
   /// with the given fields replaced by the non-null parameter values.

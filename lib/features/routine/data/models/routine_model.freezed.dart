@@ -46,6 +46,14 @@ mixin _$RoutineModel {
   String? get category => throw _privateConstructorUsedError;
   @HiveField(13)
   Priority get priority => throw _privateConstructorUsedError;
+  @HiveField(14)
+  DateTime? get completedAt => throw _privateConstructorUsedError;
+  @HiveField(15)
+  RoutineType get routineType => throw _privateConstructorUsedError;
+  @HiveField(16)
+  String? get groupId => throw _privateConstructorUsedError;
+  @HiveField(17)
+  int? get dayNumber => throw _privateConstructorUsedError;
 
   /// Serializes this RoutineModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -76,7 +84,11 @@ abstract class $RoutineModelCopyWith<$Res> {
       @HiveField(10) DateTime startDate,
       @HiveField(11) DateTime? endDate,
       @HiveField(12) String? category,
-      @HiveField(13) Priority priority});
+      @HiveField(13) Priority priority,
+      @HiveField(14) DateTime? completedAt,
+      @HiveField(15) RoutineType routineType,
+      @HiveField(16) String? groupId,
+      @HiveField(17) int? dayNumber});
 }
 
 /// @nodoc
@@ -107,6 +119,10 @@ class _$RoutineModelCopyWithImpl<$Res, $Val extends RoutineModel>
     Object? endDate = freezed,
     Object? category = freezed,
     Object? priority = null,
+    Object? completedAt = freezed,
+    Object? routineType = null,
+    Object? groupId = freezed,
+    Object? dayNumber = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -161,6 +177,22 @@ class _$RoutineModelCopyWithImpl<$Res, $Val extends RoutineModel>
           ? _value.priority
           : priority // ignore: cast_nullable_to_non_nullable
               as Priority,
+      completedAt: freezed == completedAt
+          ? _value.completedAt
+          : completedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      routineType: null == routineType
+          ? _value.routineType
+          : routineType // ignore: cast_nullable_to_non_nullable
+              as RoutineType,
+      groupId: freezed == groupId
+          ? _value.groupId
+          : groupId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dayNumber: freezed == dayNumber
+          ? _value.dayNumber
+          : dayNumber // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -186,7 +218,11 @@ abstract class _$$RoutineModelImplCopyWith<$Res>
       @HiveField(10) DateTime startDate,
       @HiveField(11) DateTime? endDate,
       @HiveField(12) String? category,
-      @HiveField(13) Priority priority});
+      @HiveField(13) Priority priority,
+      @HiveField(14) DateTime? completedAt,
+      @HiveField(15) RoutineType routineType,
+      @HiveField(16) String? groupId,
+      @HiveField(17) int? dayNumber});
 }
 
 /// @nodoc
@@ -215,6 +251,10 @@ class __$$RoutineModelImplCopyWithImpl<$Res>
     Object? endDate = freezed,
     Object? category = freezed,
     Object? priority = null,
+    Object? completedAt = freezed,
+    Object? routineType = null,
+    Object? groupId = freezed,
+    Object? dayNumber = freezed,
   }) {
     return _then(_$RoutineModelImpl(
       id: null == id
@@ -269,6 +309,22 @@ class __$$RoutineModelImplCopyWithImpl<$Res>
           ? _value.priority
           : priority // ignore: cast_nullable_to_non_nullable
               as Priority,
+      completedAt: freezed == completedAt
+          ? _value.completedAt
+          : completedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
+      routineType: null == routineType
+          ? _value.routineType
+          : routineType // ignore: cast_nullable_to_non_nullable
+              as RoutineType,
+      groupId: freezed == groupId
+          ? _value.groupId
+          : groupId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dayNumber: freezed == dayNumber
+          ? _value.dayNumber
+          : dayNumber // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -290,7 +346,11 @@ class _$RoutineModelImpl implements _RoutineModel {
       @HiveField(10) required this.startDate,
       @HiveField(11) this.endDate,
       @HiveField(12) this.category,
-      @HiveField(13) this.priority = Priority.medium})
+      @HiveField(13) this.priority = Priority.medium,
+      @HiveField(14) this.completedAt,
+      @HiveField(15) this.routineType = RoutineType.daily,
+      @HiveField(16) this.groupId,
+      @HiveField(17) this.dayNumber})
       : _tags = tags;
 
   factory _$RoutineModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -342,10 +402,23 @@ class _$RoutineModelImpl implements _RoutineModel {
   @JsonKey()
   @HiveField(13)
   final Priority priority;
+  @override
+  @HiveField(14)
+  final DateTime? completedAt;
+  @override
+  @JsonKey()
+  @HiveField(15)
+  final RoutineType routineType;
+  @override
+  @HiveField(16)
+  final String? groupId;
+  @override
+  @HiveField(17)
+  final int? dayNumber;
 
   @override
   String toString() {
-    return 'RoutineModel(id: $id, title: $title, memo: $memo, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, tags: $tags, targetCompletionCount: $targetCompletionCount, currentCompletionCount: $currentCompletionCount, startDate: $startDate, endDate: $endDate, category: $category, priority: $priority)';
+    return 'RoutineModel(id: $id, title: $title, memo: $memo, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, tags: $tags, targetCompletionCount: $targetCompletionCount, currentCompletionCount: $currentCompletionCount, startDate: $startDate, endDate: $endDate, category: $category, priority: $priority, completedAt: $completedAt, routineType: $routineType, groupId: $groupId, dayNumber: $dayNumber)';
   }
 
   @override
@@ -373,7 +446,14 @@ class _$RoutineModelImpl implements _RoutineModel {
             (identical(other.category, category) ||
                 other.category == category) &&
             (identical(other.priority, priority) ||
-                other.priority == priority));
+                other.priority == priority) &&
+            (identical(other.completedAt, completedAt) ||
+                other.completedAt == completedAt) &&
+            (identical(other.routineType, routineType) ||
+                other.routineType == routineType) &&
+            (identical(other.groupId, groupId) || other.groupId == groupId) &&
+            (identical(other.dayNumber, dayNumber) ||
+                other.dayNumber == dayNumber));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -392,7 +472,11 @@ class _$RoutineModelImpl implements _RoutineModel {
       startDate,
       endDate,
       category,
-      priority);
+      priority,
+      completedAt,
+      routineType,
+      groupId,
+      dayNumber);
 
   /// Create a copy of RoutineModel
   /// with the given fields replaced by the non-null parameter values.
@@ -424,7 +508,11 @@ abstract class _RoutineModel implements RoutineModel {
       @HiveField(10) required final DateTime startDate,
       @HiveField(11) final DateTime? endDate,
       @HiveField(12) final String? category,
-      @HiveField(13) final Priority priority}) = _$RoutineModelImpl;
+      @HiveField(13) final Priority priority,
+      @HiveField(14) final DateTime? completedAt,
+      @HiveField(15) final RoutineType routineType,
+      @HiveField(16) final String? groupId,
+      @HiveField(17) final int? dayNumber}) = _$RoutineModelImpl;
 
   factory _RoutineModel.fromJson(Map<String, dynamic> json) =
       _$RoutineModelImpl.fromJson;
@@ -468,6 +556,18 @@ abstract class _RoutineModel implements RoutineModel {
   @override
   @HiveField(13)
   Priority get priority;
+  @override
+  @HiveField(14)
+  DateTime? get completedAt;
+  @override
+  @HiveField(15)
+  RoutineType get routineType;
+  @override
+  @HiveField(16)
+  String? get groupId;
+  @override
+  @HiveField(17)
+  int? get dayNumber;
 
   /// Create a copy of RoutineModel
   /// with the given fields replaced by the non-null parameter values.

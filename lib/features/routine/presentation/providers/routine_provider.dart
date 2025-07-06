@@ -16,9 +16,18 @@ part 'routine_provider.g.dart';
 
 @riverpod
 RoutineRepository routineRepository(RoutineRepositoryRef ref) {
-  final box = Hive.box<RoutineModel>('routines');
-  final localDataSource = HiveRoutineLocalDataSource(box);
-  return RoutineRepositoryImpl(localDataSource);
+  try {
+    // main.dart에서 이미 열린 박스를 사용
+    final box = Hive.box<RoutineModel>('routines');
+    final localDataSource = HiveRoutineLocalDataSource(box);
+    return RoutineRepositoryImpl(localDataSource);
+  } catch (e) {
+    print('❌ Error accessing Hive box: $e');
+    // Hive 접근 실패 시 임시로 메모리 저장소 사용
+    print('⚠️ Falling back to memory storage');
+    final memoryDataSource = MemoryRoutineLocalDataSource();
+    return RoutineRepositoryImpl(memoryDataSource);
+  }
 }
 
 @riverpod
@@ -27,6 +36,8 @@ class RoutineNotifier extends _$RoutineNotifier {
   late final SaveRoutineUseCase _saveRoutineUseCase;
   late final UpdateRoutineUseCase _updateRoutineUseCase;
   late final DeleteRoutineUseCase _deleteRoutineUseCase;
+
+  bool _isInitialized = false;
 
   List<Routine> _sortRoutinesByPriority(List<Routine> routines) {
     return List<Routine>.from(routines)
@@ -43,11 +54,42 @@ class RoutineNotifier extends _$RoutineNotifier {
   // 오늘 루틴만 필터링하는 메서드
   List<Routine> getTodayRoutines(List<Routine> routines) {
     final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
     return routines.where((routine) {
-      // 루틴의 유효 기간 체크
-      final isInDateRange = routine.startDate.isBefore(now) &&
-          (routine.endDate == null || routine.endDate!.isAfter(now));
-      return isInDateRange && routine.isActive;
+      if (!routine.isActive) return false;
+
+      if (routine.isThreeDayRoutine) {
+        // 3일 루틴의 경우: 오늘이 해당 루틴의 수행 날짜인지 확인
+        final routineDate = DateTime(
+          routine.startDate.year,
+          routine.startDate.month,
+          routine.startDate.day,
+        );
+        return routineDate.isAtSameMomentAs(today);
+      } else {
+        // 일일 루틴의 경우: 시작일이 오늘이거나 과거이고, 종료일이 없거나 미래인 경우
+        final routineStartDate = DateTime(
+          routine.startDate.year,
+          routine.startDate.month,
+          routine.startDate.day,
+        );
+
+        // 시작일이 오늘이거나 과거여야 함
+        if (routineStartDate.isAfter(today)) return false;
+
+        // 종료일이 있다면 오늘이거나 미래여야 함
+        if (routine.endDate != null) {
+          final routineEndDate = DateTime(
+            routine.endDate!.year,
+            routine.endDate!.month,
+            routine.endDate!.day,
+          );
+          if (routineEndDate.isBefore(today)) return false;
+        }
+
+        return true;
+      }
     }).toList();
   }
 
@@ -58,32 +100,65 @@ class RoutineNotifier extends _$RoutineNotifier {
 
   @override
   RoutineState build() {
-    final repository = ref.read(routineRepositoryProvider);
-    _getRoutinesUseCase = GetRoutinesUseCase(repository);
-    _saveRoutineUseCase = SaveRoutineUseCase(repository);
-    _updateRoutineUseCase = UpdateRoutineUseCase(repository);
-    _deleteRoutineUseCase = DeleteRoutineUseCase(repository);
+    try {
+      final repository = ref.read(routineRepositoryProvider);
 
-    // 초기 상태 반환 후 비동기로 데이터 로드
-    Future.microtask(() => _loadRoutines());
-    return const RoutineState.initial();
+      // 한 번만 초기화 (중복 초기화 방지)
+      if (!_isInitialized) {
+        _getRoutinesUseCase = GetRoutinesUseCase(repository);
+        _saveRoutineUseCase = SaveRoutineUseCase(repository);
+        _updateRoutineUseCase = UpdateRoutineUseCase(repository);
+        _deleteRoutineUseCase = DeleteRoutineUseCase(repository);
+        _isInitialized = true;
+
+        // 안전한 비동기 데이터 로드 (Hive 박스가 준비된 후)
+        Future.microtask(() async {
+          try {
+            // 잠시 대기하여 Hive 박스가 완전히 준비되도록 함
+            await Future.delayed(const Duration(milliseconds: 100));
+            await _loadRoutines();
+          } catch (e) {
+            print('🚨 Critical error in build: $e');
+            state = RoutineState.error('앱을 초기화하는 중 오류가 발생했습니다. 앱을 재시작해주세요.');
+          }
+        });
+      }
+
+      return const RoutineState.initial();
+    } catch (e) {
+      print('💥 Error in build method: $e');
+      return RoutineState.error('데이터베이스 연결에 실패했습니다: $e');
+    }
   }
 
   Future<void> _loadRoutines() async {
     try {
+      print('🔄 Loading routines...');
       state = const RoutineState.loading();
       final result = await _getRoutinesUseCase.execute();
       if (result case Success(data: final routines)) {
+        print('✅ Loaded ${routines.length} routines successfully');
         state = RoutineState.loaded(_sortRoutinesByPriority(routines));
       } else if (result case ResultFailure(failure: final failure)) {
+        print('❌ Failed to load routines: ${failure.message}');
         state = RoutineState.error(failure.message);
       }
-    } catch (e) {
-      state = RoutineState.error(e.toString());
+    } catch (e, stackTrace) {
+      print('💥 Exception while loading routines: $e');
+      print('Stack trace: $stackTrace');
+      state = RoutineState.error('데이터를 불러오는 중 오류가 발생했습니다: $e');
     }
   }
 
-  // 루틴 완료 메서드
+  // 3일 루틴 완료 체크 메서드
+  bool isThreeDayRoutineCompleted(String groupId, List<Routine> routines) {
+    final groupRoutines = routines.where((r) => r.groupId == groupId).toList();
+    if (groupRoutines.length != 3) return false;
+
+    return groupRoutines.every((routine) => routine.isCompletedToday);
+  }
+
+  // markRoutineAsCompleted 메서드에 3일 루틴 완료 체크 추가
   Future<void> markRoutineAsCompleted(String id) async {
     state.whenOrNull(
       loaded: (routines) async {
@@ -92,14 +167,25 @@ class RoutineNotifier extends _$RoutineNotifier {
           if (index == -1) return;
 
           final routine = routines[index];
-          if (routine.isCompletedToday) return; // 이미 완료된 상태면 아무 동작 안함
+          if (routine.isCompletedToday) return;
 
           final updatedRoutine = routine.markAsCompleted();
-
-          // UI 즉시 업데이트
           final updatedRoutines = List<Routine>.from(routines);
           updatedRoutines[index] = updatedRoutine;
           state = RoutineState.loaded(updatedRoutines);
+
+          // 3일 루틴 완료 체크
+          if (routine.groupId != null) {
+            final isGroupCompleted =
+                isThreeDayRoutineCompleted(routine.groupId!, updatedRoutines);
+            if (isGroupCompleted) {
+              // 🎉 3일 루틴 완료 축하 메시지
+              Future.microtask(() {
+                // 여기서 특별한 축하 효과 실행
+                _showThreeDayCompletionCelebration();
+              });
+            }
+          }
 
           // 백엔드 업데이트
           final result = await _updateRoutineUseCase.execute(updatedRoutine);
@@ -123,6 +209,11 @@ class RoutineNotifier extends _$RoutineNotifier {
         }
       },
     );
+  }
+
+  void _showThreeDayCompletionCelebration() {
+    // 3일 루틴 완료 시 특별한 효과
+    // 예: 애니메이션, 사운드, 특별 메시지 등
   }
 
   // 루틴 미완료 메서드
@@ -188,27 +279,21 @@ class RoutineNotifier extends _$RoutineNotifier {
     state.whenOrNull(
       loaded: (routines) async {
         try {
-          // 이전 상태를 저장하고 UI를 즉시 업데이트합니다
-          final previousRoutines = List<Routine>.from(routines);
-          final updatedRoutines =
-              _sortRoutinesByPriority([...routines, routine]);
-          state = RoutineState.loaded(updatedRoutines);
-
-          // 백엔드 업데이트를 시도합니다
+          // 백엔드 업데이트를 먼저 시도합니다
           final result = await _saveRoutineUseCase.execute(routine);
 
-          if (result case ResultFailure(failure: final failure)) {
-            // 실패 시 이전 상태로 복원하고 에러를 표시합니다
-            state = RoutineState.loaded(previousRoutines);
-            Future.microtask(() {
-              state = RoutineState.error(failure.message);
-              Future.delayed(const Duration(seconds: 2), () {
-                state = RoutineState.loaded(previousRoutines);
-              });
+          if (result case Success()) {
+            // 성공 시 데이터를 새로고침합니다
+            await refreshRoutines();
+          } else if (result case ResultFailure(failure: final failure)) {
+            // 실패 시 에러를 표시합니다
+            state = RoutineState.error(failure.message);
+            Future.delayed(const Duration(seconds: 2), () {
+              state = RoutineState.loaded(routines);
             });
           }
         } catch (e) {
-          // 예외 발생 시 에러를 표시하고 이전 상태로 복원합니다
+          // 예외 발생 시 에러를 표시합니다
           state = RoutineState.error(e.toString());
           Future.delayed(const Duration(seconds: 2), () {
             state = RoutineState.loaded(routines);
@@ -218,15 +303,71 @@ class RoutineNotifier extends _$RoutineNotifier {
       initial: () async {
         try {
           // 초기 상태일 경우 바로 새 루틴으로 시작합니다
-          state = RoutineState.loaded([routine]);
           final result = await _saveRoutineUseCase.execute(routine);
 
-          if (result case ResultFailure(failure: final failure)) {
+          if (result case Success()) {
+            // 성공 시 데이터를 새로고침합니다
+            await refreshRoutines();
+          } else if (result case ResultFailure(failure: final failure)) {
             state = RoutineState.error(failure.message);
             Future.delayed(const Duration(seconds: 2), () {
               state = const RoutineState.initial();
             });
           }
+        } catch (e) {
+          state = RoutineState.error(e.toString());
+          Future.delayed(const Duration(seconds: 2), () {
+            state = const RoutineState.initial();
+          });
+        }
+      },
+    );
+  }
+
+  // 3일 루틴 다중 생성 메서드
+  Future<void> createThreeDayRoutines(List<Routine> routines) async {
+    state.whenOrNull(
+      loaded: (existingRoutines) async {
+        try {
+          // 모든 루틴을 순차적으로 저장합니다
+          for (final routine in routines) {
+            final result = await _saveRoutineUseCase.execute(routine);
+            if (result case ResultFailure(failure: final failure)) {
+              // 실패 시 에러를 표시합니다
+              state = RoutineState.error(failure.message);
+              Future.delayed(const Duration(seconds: 2), () {
+                state = RoutineState.loaded(existingRoutines);
+              });
+              return;
+            }
+          }
+
+          // 모든 루틴 저장 성공 시 데이터를 새로고침합니다
+          await refreshRoutines();
+        } catch (e) {
+          // 예외 발생 시 에러를 표시합니다
+          state = RoutineState.error(e.toString());
+          Future.delayed(const Duration(seconds: 2), () {
+            state = RoutineState.loaded(existingRoutines);
+          });
+        }
+      },
+      initial: () async {
+        try {
+          // 모든 루틴을 순차적으로 저장합니다
+          for (final routine in routines) {
+            final result = await _saveRoutineUseCase.execute(routine);
+            if (result case ResultFailure(failure: final failure)) {
+              state = RoutineState.error(failure.message);
+              Future.delayed(const Duration(seconds: 2), () {
+                state = const RoutineState.initial();
+              });
+              return;
+            }
+          }
+
+          // 모든 루틴 저장 성공 시 데이터를 새로고침합니다
+          await refreshRoutines();
         } catch (e) {
           state = RoutineState.error(e.toString());
           Future.delayed(const Duration(seconds: 2), () {

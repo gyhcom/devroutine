@@ -23,6 +23,10 @@ class RoutineModel with _$RoutineModel {
     @HiveField(11) DateTime? endDate,
     @HiveField(12) String? category,
     @HiveField(13) @Default(Priority.medium) Priority priority,
+    @HiveField(14) DateTime? completedAt,
+    @HiveField(15) @Default(RoutineType.daily) RoutineType routineType,
+    @HiveField(16) String? groupId,
+    @HiveField(17) int? dayNumber,
   }) = _RoutineModel;
 
   factory RoutineModel.fromJson(Map<String, dynamic> json) =>
@@ -43,6 +47,10 @@ class RoutineModel with _$RoutineModel {
       endDate: routine.endDate,
       category: routine.category,
       priority: routine.priority,
+      completedAt: routine.completedAt,
+      routineType: routine.routineType,
+      groupId: routine.groupId,
+      dayNumber: routine.dayNumber,
     );
   }
 }
@@ -63,6 +71,10 @@ extension RoutineModelX on RoutineModel {
       endDate: endDate,
       category: category,
       priority: priority,
+      completedAt: completedAt,
+      routineType: routineType,
+      groupId: groupId,
+      dayNumber: dayNumber,
     );
   }
 }

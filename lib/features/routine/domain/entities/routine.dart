@@ -38,6 +38,8 @@ class Routine with _$Routine {
     @Default(Priority.medium) Priority priority,
     DateTime? completedAt,
     @Default(RoutineType.daily) RoutineType routineType, // 루틴 타입 추가
+    String? groupId, // 3일 루틴 그룹 식별자
+    int? dayNumber, // 3일 루틴의 일차 (1, 2, 3)
   }) = _Routine;
 
   factory Routine.create({
@@ -50,6 +52,8 @@ class Routine with _$Routine {
     String? category,
     Priority priority = Priority.medium,
     RoutineType routineType = RoutineType.daily, // 루틴 타입 파라미터 추가
+    String? groupId, // 그룹 ID 추가
+    int? dayNumber, // 일차 추가
   }) {
     // Validation
     if (title.trim().isEmpty) {
@@ -88,10 +92,81 @@ class Routine with _$Routine {
       priority: priority,
       completedAt: null,
       routineType: routineType,
+      groupId: groupId,
+      dayNumber: dayNumber,
     );
   }
 
-  // 3일 루틴 생성 팩토리 메서드
+  // 3일 루틴 3개 생성 팩토리 메서드
+  static List<Routine> createThreeDayRoutines({
+    required String title,
+    String? memo,
+    required List<String> tags,
+    required int targetCompletionCount,
+    required DateTime startDate,
+    String? category,
+    Priority priority = Priority.medium,
+  }) {
+    final groupId = const Uuid().v4(); // 그룹 ID 생성
+    final baseTitle = title.trim();
+
+    return [
+      Routine.create(
+        title: '$baseTitle (1일차)',
+        memo: memo,
+        tags: tags,
+        targetCompletionCount: targetCompletionCount,
+        startDate: startDate,
+        endDate: DateTime(
+            startDate.year, startDate.month, startDate.day, 23, 59, 59),
+        category: category,
+        priority: priority,
+        routineType: RoutineType.threeDay,
+        groupId: groupId,
+        dayNumber: 1,
+      ),
+      Routine.create(
+        title: '$baseTitle (2일차)',
+        memo: memo,
+        tags: tags,
+        targetCompletionCount: targetCompletionCount,
+        startDate: startDate.add(const Duration(days: 1)),
+        endDate: DateTime(
+            startDate.add(const Duration(days: 1)).year,
+            startDate.add(const Duration(days: 1)).month,
+            startDate.add(const Duration(days: 1)).day,
+            23,
+            59,
+            59),
+        category: category,
+        priority: priority,
+        routineType: RoutineType.threeDay,
+        groupId: groupId,
+        dayNumber: 2,
+      ),
+      Routine.create(
+        title: '$baseTitle (3일차)',
+        memo: memo,
+        tags: tags,
+        targetCompletionCount: targetCompletionCount,
+        startDate: startDate.add(const Duration(days: 2)),
+        endDate: DateTime(
+            startDate.add(const Duration(days: 2)).year,
+            startDate.add(const Duration(days: 2)).month,
+            startDate.add(const Duration(days: 2)).day,
+            23,
+            59,
+            59),
+        category: category,
+        priority: priority,
+        routineType: RoutineType.threeDay,
+        groupId: groupId,
+        dayNumber: 3,
+      ),
+    ];
+  }
+
+  // 기존 3일 루틴 생성 팩토리 메서드 (단일 루틴) - 호환성을 위해 유지
   factory Routine.createThreeDayRoutine({
     required String title,
     String? memo,

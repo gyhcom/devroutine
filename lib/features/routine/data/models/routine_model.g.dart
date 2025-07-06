@@ -30,13 +30,17 @@ class RoutineModelAdapter extends TypeAdapter<RoutineModel> {
       endDate: fields[11] as DateTime?,
       category: fields[12] as String?,
       priority: fields[13] as Priority,
+      completedAt: fields[14] as DateTime?,
+      routineType: fields[15] as RoutineType,
+      groupId: fields[16] as String?,
+      dayNumber: fields[17] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, RoutineModel obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(17)
       ..writeByte(1)
       ..write(obj.id)
       ..writeByte(2)
@@ -62,7 +66,15 @@ class RoutineModelAdapter extends TypeAdapter<RoutineModel> {
       ..writeByte(12)
       ..write(obj.category)
       ..writeByte(13)
-      ..write(obj.priority);
+      ..write(obj.priority)
+      ..writeByte(14)
+      ..write(obj.completedAt)
+      ..writeByte(15)
+      ..write(obj.routineType)
+      ..writeByte(16)
+      ..write(obj.groupId)
+      ..writeByte(17)
+      ..write(obj.dayNumber);
   }
 
   @override
@@ -98,6 +110,14 @@ _$RoutineModelImpl _$$RoutineModelImplFromJson(Map<String, dynamic> json) =>
       category: json['category'] as String?,
       priority: $enumDecodeNullable(_$PriorityEnumMap, json['priority']) ??
           Priority.medium,
+      completedAt: json['completedAt'] == null
+          ? null
+          : DateTime.parse(json['completedAt'] as String),
+      routineType:
+          $enumDecodeNullable(_$RoutineTypeEnumMap, json['routineType']) ??
+              RoutineType.daily,
+      groupId: json['groupId'] as String?,
+      dayNumber: (json['dayNumber'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$RoutineModelImplToJson(_$RoutineModelImpl instance) =>
@@ -115,10 +135,19 @@ Map<String, dynamic> _$$RoutineModelImplToJson(_$RoutineModelImpl instance) =>
       'endDate': instance.endDate?.toIso8601String(),
       'category': instance.category,
       'priority': _$PriorityEnumMap[instance.priority]!,
+      'completedAt': instance.completedAt?.toIso8601String(),
+      'routineType': _$RoutineTypeEnumMap[instance.routineType]!,
+      'groupId': instance.groupId,
+      'dayNumber': instance.dayNumber,
     };
 
 const _$PriorityEnumMap = {
   Priority.low: 'LOW',
   Priority.medium: 'MEDIUM',
   Priority.high: 'HIGH',
+};
+
+const _$RoutineTypeEnumMap = {
+  RoutineType.daily: 'DAILY',
+  RoutineType.threeDay: 'THREE_DAY',
 };

@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:devroutine/core/routing/app_router.dart';
 import 'package:devroutine/core/widgets/banner_ad_widget.dart';
+import 'package:devroutine/features/routine/domain/entities/routine.dart';
 import 'package:devroutine/features/routine/presentation/providers/routine_provider.dart';
 import 'package:devroutine/features/routine/presentation/utils/priority_color_util.dart';
 import 'package:devroutine/features/routine/presentation/widgets/routine_card.dart';
@@ -17,7 +18,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('나의 루틴 대시보드'),
+        title: const Text('3Days - 나의 루틴'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -27,7 +28,7 @@ class DashboardScreen extends ConsumerWidget {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.refresh(routineNotifierProvider);
+          await ref.read(routineNotifierProvider.notifier).refreshRoutines();
         },
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -51,11 +52,23 @@ class DashboardScreen extends ConsumerWidget {
   Widget _buildGreeting() {
     final now = DateTime.now();
     final formattedDate = DateFormat('yyyy년 M월 d일 (EEEE)', 'ko_KR').format(now);
+
+    // 시간대별 인사말
+    String greeting;
+    final hour = now.hour;
+    if (hour < 12) {
+      greeting = '좋은 아침이에요! ☀️';
+    } else if (hour < 18) {
+      greeting = '좋은 오후예요! 🌤️';
+    } else {
+      greeting = '좋은 저녁이에요! 🌙';
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('안녕하세요, 개발자님! 👋',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(greeting,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         Text(formattedDate, style: const TextStyle(color: Colors.grey)),
       ],
     );
@@ -74,60 +87,135 @@ class DashboardScreen extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          '오늘의 루틴',
+          '📋 오늘의 루틴',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
         Consumer(
           builder: (context, ref, child) {
-            return ref.watch(routineNotifierProvider).maybeWhen(
+            return ref.watch(routineNotifierProvider).when(
+                  initial: () => const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('루틴 데이터를 불러오는 중...'),
+                      ],
+                    ),
+                  ),
+                  loading: () => const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('루틴 데이터를 불러오는 중...'),
+                      ],
+                    ),
+                  ),
+                  error: (error) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        SizedBox(height: 16),
+                        Text(
+                          '오류가 발생했습니다',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          error,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => ref.refresh(routineNotifierProvider),
+                          child: Text('다시 시도'),
+                        ),
+                      ],
+                    ),
+                  ),
                   loaded: (routines) {
-                    if (routines.isEmpty) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24),
-                          child: Text('오늘 할 루틴이 없습니다'),
+                    // 오늘의 루틴만 필터링
+                    final notifier = ref.read(routineNotifierProvider.notifier);
+                    final todayRoutines = notifier.getTodayRoutines(routines);
+
+                    if (todayRoutines.isEmpty) {
+                      return Container(
+                        height: 200,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_task,
+                                size: 48,
+                                color: Colors.grey,
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                '오늘 할 루틴이 없습니다\n새로운 루틴을 추가해보세요!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     }
 
-                    // Calculate grid dimensions
-                    const crossAxisCount = 3;
-                    final itemCount = routines.length;
+                    // 3일 루틴 그룹 정보 생성
+                    final groupedRoutines = <String, List<Routine>>{};
+                    for (final routine in todayRoutines) {
+                      if (routine.groupId != null) {
+                        groupedRoutines
+                            .putIfAbsent(routine.groupId!, () => [])
+                            .add(routine);
+                      }
+                    }
 
-                    // Calculate grid height based on number of items
-                    final rowCount = (itemCount / crossAxisCount).ceil();
-                    final gridHeight = rowCount * 120.0; // 각 카드의 높이를 120으로 설정
+                    // 우선순위별로 정렬
+                    final sortedRoutines = [...todayRoutines];
+                    sortedRoutines.sort((a, b) {
+                      // 우선순위 순서: High -> Medium -> Low
+                      final priorityOrder = {
+                        Priority.high: 0,
+                        Priority.medium: 1,
+                        Priority.low: 2,
+                      };
+                      return priorityOrder[a.priority]!
+                          .compareTo(priorityOrder[b.priority]!);
+                    });
 
-                    return SizedBox(
-                      height: gridHeight,
-                      child: GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: crossAxisCount,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 1, // Square aspect ratio
-                        ),
-                        itemCount: itemCount,
-                        itemBuilder: (context, index) {
-                          final routine = routines[index];
-                          return RoutineCard(
-                            routine: routine,
-                            borderColor:
-                                getPriorityBorderColor(routine.priority),
-                            onTap: () => context.router
-                                .push(RoutineFormRoute(routine: routine)),
-                          );
-                        },
-                      ),
+                    return Column(
+                      children: sortedRoutines.map((routine) {
+                        List<Routine>? groupRoutines;
+                        if (routine.groupId != null) {
+                          groupRoutines = groupedRoutines[routine.groupId!];
+                        }
+
+                        return RoutineCard(
+                          routine: routine,
+                          borderColor: getPriorityBorderColor(routine.priority),
+                          groupRoutines: groupRoutines,
+                          onTap: () => context.router
+                              .push(RoutineFormRoute(routine: routine)),
+                        );
+                      }).toList(),
                     );
                   },
-                  orElse: () => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
                 );
           },
         ),

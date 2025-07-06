@@ -113,7 +113,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
                         Expanded(
                           child: _buildRoutineTypeOption(
                             title: '3일 루틴',
-                            description: '3일간 지속',
+                            description: '3개 루틴 생성',
                             icon: Icons.calendar_today,
                             color: Colors.blue,
                             isSelected: _routineType == RoutineType.threeDay,
@@ -247,38 +247,52 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
   Future<void> _saveRoutine() async {
     if (_formKey.currentState!.validate()) {
       final now = DateTime.now();
-      final routine = widget.routine == null
-          ? (_routineType == RoutineType.threeDay
-              ? Routine.createThreeDayRoutine(
-                  title: _titleController.text.trim(),
-                  memo: _memoController.text.trim(),
-                  tags: [],
-                  targetCompletionCount: 1,
-                  startDate: now,
-                  priority: _priority,
-                )
-              : Routine.create(
-                  title: _titleController.text.trim(),
-                  memo: _memoController.text.trim(),
-                  tags: [],
-                  targetCompletionCount: 1,
-                  startDate: now,
-                  endDate: DateTime(now.year, now.month, now.day, 23, 59, 59),
-                  priority: _priority,
-                  routineType: RoutineType.daily,
-                ))
-          : widget.routine!.copyWith(
-              title: _titleController.text.trim(),
-              memo: _memoController.text.trim(),
-              priority: _priority,
-              updatedAt: now,
-            );
 
       if (widget.routine == null) {
-        ref.read(routineNotifierProvider.notifier).createRoutine(routine);
-        await showTopMessage(context, '✅ 루틴이 생성되었습니다!');
+        // 새 루틴 생성
+        if (_routineType == RoutineType.threeDay) {
+          // 3일 루틴: 3개의 루틴 생성
+          final threeDayRoutines = Routine.createThreeDayRoutines(
+            title: _titleController.text.trim(),
+            memo: _memoController.text.trim(),
+            tags: [],
+            targetCompletionCount: 1,
+            startDate: now,
+            priority: _priority,
+          );
+
+          ref
+              .read(routineNotifierProvider.notifier)
+              .createThreeDayRoutines(threeDayRoutines);
+          await showTopMessage(context, '🚀 3일 챌린지가 시작되었습니다! 함께 완주해봐요!');
+        } else {
+          // 일일 루틴: 1개의 루틴 생성
+          final routine = Routine.create(
+            title: _titleController.text.trim(),
+            memo: _memoController.text.trim(),
+            tags: [],
+            targetCompletionCount: 1,
+            startDate: now,
+            endDate: DateTime(now.year, now.month, now.day, 23, 59, 59),
+            priority: _priority,
+            routineType: RoutineType.daily,
+          );
+
+          ref.read(routineNotifierProvider.notifier).createRoutine(routine);
+          await showTopMessage(context, '✅ 루틴이 생성되었습니다!');
+        }
       } else {
-        ref.read(routineNotifierProvider.notifier).updateRoutine(routine);
+        // 기존 루틴 수정
+        final updatedRoutine = widget.routine!.copyWith(
+          title: _titleController.text.trim(),
+          memo: _memoController.text.trim(),
+          priority: _priority,
+          updatedAt: now,
+        );
+
+        ref
+            .read(routineNotifierProvider.notifier)
+            .updateRoutine(updatedRoutine);
         await showTopMessage(context, '✅ 루틴이 수정되었습니다!');
       }
 

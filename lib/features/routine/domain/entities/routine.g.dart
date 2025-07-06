@@ -30,6 +30,8 @@ _$RoutineImpl _$$RoutineImplFromJson(Map<String, dynamic> json) =>
       routineType:
           $enumDecodeNullable(_$RoutineTypeEnumMap, json['routineType']) ??
               RoutineType.daily,
+      groupId: json['groupId'] as String?,
+      dayNumber: (json['dayNumber'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$$RoutineImplToJson(_$RoutineImpl instance) =>
@@ -49,6 +51,8 @@ Map<String, dynamic> _$$RoutineImplToJson(_$RoutineImpl instance) =>
       'priority': _$PriorityEnumMap[instance.priority]!,
       'completedAt': instance.completedAt?.toIso8601String(),
       'routineType': _$RoutineTypeEnumMap[instance.routineType]!,
+      'groupId': instance.groupId,
+      'dayNumber': instance.dayNumber,
     };
 
 const _$PriorityEnumMap = {
