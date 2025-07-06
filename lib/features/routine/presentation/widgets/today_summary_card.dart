@@ -216,6 +216,8 @@ class TodaySummaryCard extends ConsumerWidget {
             final completedCount =
                 groupRoutines.where((r) => r.isCompletedToday == true).length;
             final totalCount = groupRoutines.length;
+            final completionRate =
+                analysis.threeDayGroupCompletionRates[groupId] ?? 0.0;
 
             return Container(
               margin: const EdgeInsets.only(bottom: 6),
@@ -273,66 +275,61 @@ class TodaySummaryCard extends ConsumerWidget {
   TodayAnalysis _analyzeTodayRoutines(List<Routine> allRoutines) {
     final dailyRoutines = <Routine>[];
     final threeDayGroups = <String, List<Routine>>{};
-
-    // 오늘의 루틴만 필터링
-    final todayRoutines = allRoutines.where((routine) {
-      final today = DateTime.now();
-      final routineDate = routine.createdAt;
-
-      if (routine.isThreeDayRoutine) {
-        // 3일 루틴의 경우 오늘 해야 할 일차만 포함
-        final dayNumber = routine.dayNumber ?? 1;
-        final targetDate = DateTime(
-          routineDate.year,
-          routineDate.month,
-          routineDate.day + (dayNumber - 1),
-        );
-        return targetDate.year == today.year &&
-            targetDate.month == today.month &&
-            targetDate.day == today.day;
-      } else {
-        // 일일 루틴의 경우 매일 포함
-        return true;
-      }
-    }).toList();
+    final threeDayGroupCompletionRates = <String, double>{};
 
     // 일일 루틴과 3일 루틴 분류
     for (final routine in allRoutines) {
       if (routine.isThreeDayRoutine && routine.groupId != null) {
-        // groupId를 키로 사용하여 그룹화 (title 대신)
+        // groupId를 키로 사용하여 그룹화
         threeDayGroups.putIfAbsent(routine.groupId!, () => []).add(routine);
       } else if (!routine.isThreeDayRoutine) {
-        dailyRoutines.add(routine);
+        // 활성화된 일일 루틴만 포함
+        if (routine.isActive) {
+          dailyRoutines.add(routine);
+        }
       }
     }
 
-    // 완료된 일일 루틴 수 계산
+    // 완료된 일일 루틴 수 계산 (오늘 완료된 것만)
     final completedDailyRoutines =
         dailyRoutines.where((r) => r.isCompletedToday == true).length;
 
-    // 완료된 3일 루틴 그룹 수 계산
+    // 3일 루틴 그룹별 완성도 계산
     int completedThreeDayGroups = 0;
-    for (final groupRoutines in threeDayGroups.values) {
-      // 오늘 해야 할 일차만 확인
-      final todayRoutine = groupRoutines.where((r) {
-        final today = DateTime.now();
-        final routineDate = r.createdAt;
-        final dayNumber = r.dayNumber ?? 1;
-        final targetDate = DateTime(
-          routineDate.year,
-          routineDate.month,
-          routineDate.day + (dayNumber - 1),
+    for (final entry in threeDayGroups.entries) {
+      final groupId = entry.key;
+      final groupRoutines = entry.value;
+
+      // 그룹이 완전한지 확인 (3개 루틴이 모두 있는지)
+      if (groupRoutines.length < 3) {
+        // 불완전한 그룹은 제외하고 완성도 0%로 설정
+        threeDayGroupCompletionRates[groupId] = 0.0;
+        continue;
+      }
+
+      // 오늘 해야 할 일차 확인
+      final today = DateTime.now();
+      final todayRoutines = groupRoutines.where((r) {
+        final routineDate = DateTime(
+          r.startDate.year,
+          r.startDate.month,
+          r.startDate.day,
         );
-        return targetDate.year == today.year &&
-            targetDate.month == today.month &&
-            targetDate.day == today.day;
+        final todayDate = DateTime(today.year, today.month, today.day);
+        return routineDate.isAtSameMomentAs(todayDate);
       }).toList();
 
-      // 오늘 할 일이 완료되었으면 그룹 완료로 카운트
-      if (todayRoutine.isNotEmpty &&
-          todayRoutine.every((r) => r.isCompletedToday == true)) {
+      // 오늘 할 일이 있고 완료되었으면 그룹 완료로 카운트
+      if (todayRoutines.isNotEmpty &&
+          todayRoutines.every((r) => r.isCompletedToday == true)) {
         completedThreeDayGroups++;
       }
+
+      // 전체 그룹 완성도 계산 (삭제된 루틴 고려)
+      final completedInGroup =
+          groupRoutines.where((r) => r.isCompletedToday == true).length;
+      threeDayGroupCompletionRates[groupId] =
+          completedInGroup / groupRoutines.length;
     }
 
     return TodayAnalysis(
@@ -340,6 +337,7 @@ class TodaySummaryCard extends ConsumerWidget {
       threeDayGroups: threeDayGroups,
       completedDailyRoutines: completedDailyRoutines,
       completedThreeDayGroups: completedThreeDayGroups,
+      threeDayGroupCompletionRates: threeDayGroupCompletionRates,
     );
   }
 }
@@ -349,11 +347,13 @@ class TodayAnalysis {
   final Map<String, List<Routine>> threeDayGroups;
   final int completedDailyRoutines;
   final int completedThreeDayGroups;
+  final Map<String, double> threeDayGroupCompletionRates;
 
   TodayAnalysis({
     required this.dailyRoutines,
     required this.threeDayGroups,
     required this.completedDailyRoutines,
     required this.completedThreeDayGroups,
+    required this.threeDayGroupCompletionRates,
   });
 }

@@ -56,17 +56,19 @@ class RoutineNotifier extends _$RoutineNotifier {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
-    return routines.where((routine) {
+    final todayRoutines = routines.where((routine) {
       if (!routine.isActive) return false;
 
       if (routine.isThreeDayRoutine) {
-        // 3일 루틴의 경우: 오늘이 해당 루틴의 수행 날짜인지 확인
+        // 3일 루틴의 경우: 각 루틴의 startDate가 오늘과 같은지 확인
         final routineDate = DateTime(
           routine.startDate.year,
           routine.startDate.month,
           routine.startDate.day,
         );
-        return routineDate.isAtSameMomentAs(today);
+        final isToday = routineDate.isAtSameMomentAs(today);
+
+        return isToday;
       } else {
         // 일일 루틴의 경우: 시작일이 오늘이거나 과거이고, 종료일이 없거나 미래인 경우
         final routineStartDate = DateTime(
@@ -91,6 +93,8 @@ class RoutineNotifier extends _$RoutineNotifier {
         return true;
       }
     }).toList();
+
+    return todayRoutines;
   }
 
   // 오늘 완료된 루틴 수를 계산하는 메서드
@@ -156,6 +160,103 @@ class RoutineNotifier extends _$RoutineNotifier {
     if (groupRoutines.length != 3) return false;
 
     return groupRoutines.every((routine) => routine.isCompletedToday);
+  }
+
+  // 3일 루틴 그룹 정보 가져오기
+  List<Routine> getThreeDayGroupRoutines(
+      String groupId, List<Routine> routines) {
+    final groupRoutines = routines.where((r) => r.groupId == groupId).toList();
+
+    // dayNumber 순서로 정렬 (1일차, 2일차, 3일차)
+    groupRoutines
+        .sort((a, b) => (a.dayNumber ?? 0).compareTo(b.dayNumber ?? 0));
+
+    return groupRoutines;
+  }
+
+  // 3일 루틴 그룹 삭제 (모든 관련 루틴 삭제)
+  Future<void> deleteThreeDayGroup(String groupId) async {
+    state.whenOrNull(
+      loaded: (routines) async {
+        try {
+          final groupRoutines = getThreeDayGroupRoutines(groupId, routines);
+          if (groupRoutines.isEmpty) return;
+
+          // 모든 그룹 루틴 삭제
+          for (final routine in groupRoutines) {
+            final result = await _deleteRoutineUseCase.execute(routine.id);
+            if (result case ResultFailure(failure: final failure)) {
+              state =
+                  RoutineState.error('그룹 삭제 중 오류가 발생했습니다: ${failure.message}');
+              return;
+            }
+          }
+
+          // 성공 시 데이터 새로고침
+          await refreshRoutines();
+        } catch (e) {
+          state = RoutineState.error('그룹 삭제 중 오류가 발생했습니다: $e');
+        }
+      },
+    );
+  }
+
+  // 3일 루틴 개별 삭제 시 그룹 상태 확인 및 처리
+  Future<void> deleteRoutineWithGroupCheck(String id) async {
+    state.whenOrNull(
+      loaded: (routines) async {
+        try {
+          final routineToDelete = routines.firstWhere((r) => r.id == id);
+
+          if (routineToDelete.isThreeDayRoutine &&
+              routineToDelete.groupId != null) {
+            // 3일 루틴의 경우 그룹 전체 삭제 여부 확인
+            final groupRoutines =
+                getThreeDayGroupRoutines(routineToDelete.groupId!, routines);
+
+            if (groupRoutines.length > 1) {
+              // 그룹에 다른 루틴이 있으면 경고 표시
+              state =
+                  RoutineState.error('3일 루틴은 그룹 단위로 관리됩니다. 전체 그룹을 삭제하시겠습니까?');
+              return;
+            }
+          }
+
+          // 단일 루틴 삭제 또는 마지막 그룹 루틴 삭제
+          await deleteRoutine(id);
+        } catch (e) {
+          state = RoutineState.error('루틴 삭제 중 오류가 발생했습니다: $e');
+        }
+      },
+    );
+  }
+
+  // 3일 루틴 그룹의 완성도 계산 (전체 그룹 기준)
+  double getThreeDayGroupCompletionRate(
+      String groupId, List<Routine> routines) {
+    final groupRoutines = getThreeDayGroupRoutines(groupId, routines);
+    if (groupRoutines.isEmpty) return 0.0;
+
+    final completedCount =
+        groupRoutines.where((r) => r.isCompletedToday).length;
+    return completedCount / groupRoutines.length;
+  }
+
+  // 3일 루틴 그룹의 오늘 할 일 확인
+  List<Routine> getTodayThreeDayRoutines(
+      String groupId, List<Routine> routines) {
+    final groupRoutines = getThreeDayGroupRoutines(groupId, routines);
+    final today = DateTime.now();
+
+    return groupRoutines.where((routine) {
+      final routineDate = DateTime(
+        routine.startDate.year,
+        routine.startDate.month,
+        routine.startDate.day,
+      );
+      final todayDate = DateTime(today.year, today.month, today.day);
+      return routineDate.isAtSameMomentAs(todayDate);
+    }).toList();
   }
 
   // markRoutineAsCompleted 메서드에 3일 루틴 완료 체크 추가
@@ -386,27 +487,47 @@ class RoutineNotifier extends _$RoutineNotifier {
           final routineIndex = routines.indexWhere((r) => r.id == routine.id);
           if (routineIndex == -1) return;
 
-          // 이전 상태를 저장하고 UI를 즉시 업데이트합니다
-          final previousRoutines = List<Routine>.from(routines);
-          final updatedRoutines = List<Routine>.from(routines);
-          updatedRoutines[routineIndex] = routine;
-          state = RoutineState.loaded(_sortRoutinesByPriority(updatedRoutines));
+          final originalRoutine = routines[routineIndex];
+
+          // 3일 루틴의 경우 그룹 일관성 검증
+          if (routine.isThreeDayRoutine && routine.groupId != null) {
+            final groupRoutines =
+                getThreeDayGroupRoutines(routine.groupId!, routines);
+
+            // 그룹 내 다른 루틴들과 일관성 확인
+            if (groupRoutines.length > 1) {
+              final firstInGroup = groupRoutines.first;
+
+              // 제목 패턴 검증 (기본 제목이 같아야 함)
+              if (!_isValidThreeDayTitleUpdate(
+                  routine.title, firstInGroup.title, routine.dayNumber ?? 1)) {
+                state = RoutineState.error('3일 루틴 그룹의 제목은 일관성을 유지해야 합니다.');
+                return;
+              }
+
+              // 우선순위 일관성 검증
+              if (routine.priority != firstInGroup.priority) {
+                state = RoutineState.error('3일 루틴 그룹의 우선순위는 모두 같아야 합니다.');
+                return;
+              }
+            }
+          }
 
           // 백엔드 업데이트를 시도합니다
           final result = await _updateRoutineUseCase.execute(routine);
 
-          if (result case ResultFailure(failure: final failure)) {
-            // 실패 시 이전 상태로 복원하고 에러를 표시합니다
-            state = RoutineState.loaded(previousRoutines);
-            Future.microtask(() {
-              state = RoutineState.error(failure.message);
-              Future.delayed(const Duration(seconds: 2), () {
-                state = RoutineState.loaded(previousRoutines);
-              });
+          if (result case Success()) {
+            // 성공 시 데이터를 새로고침합니다
+            await refreshRoutines();
+          } else if (result case ResultFailure(failure: final failure)) {
+            // 실패 시 에러를 표시합니다
+            state = RoutineState.error(failure.message);
+            Future.delayed(const Duration(seconds: 2), () {
+              state = RoutineState.loaded(routines);
             });
           }
         } catch (e) {
-          // 예외 발생 시 에러를 표시하고 이전 상태로 복원합니다
+          // 예외 발생 시 에러를 표시합니다
           state = RoutineState.error(e.toString());
           Future.delayed(const Duration(seconds: 2), () {
             state = RoutineState.loaded(routines);
@@ -414,6 +535,16 @@ class RoutineNotifier extends _$RoutineNotifier {
         }
       },
     );
+  }
+
+  // 3일 루틴 제목 업데이트 유효성 검증
+  bool _isValidThreeDayTitleUpdate(
+      String newTitle, String groupBaseTitle, int dayNumber) {
+    // 기본 제목에서 "(X일차)" 부분 제거
+    final baseTitle = groupBaseTitle.replaceAll(RegExp(r'\s*\(\d+일차\)'), '');
+    final expectedTitle = '$baseTitle (${dayNumber}일차)';
+
+    return newTitle == expectedTitle || newTitle == baseTitle;
   }
 
   Future<void> deleteRoutine(String id) async {
@@ -469,5 +600,115 @@ class RoutineNotifier extends _$RoutineNotifier {
         state = RoutineState.loaded(updatedRoutines);
       }
     });
+  }
+
+  // 3일 루틴 그룹 상태 요약 정보
+  Map<String, dynamic> getThreeDayGroupSummary(
+      String groupId, List<Routine> routines) {
+    final groupRoutines = getThreeDayGroupRoutines(groupId, routines);
+
+    if (groupRoutines.isEmpty) {
+      return {
+        'isValid': false,
+        'totalCount': 0,
+        'completedCount': 0,
+        'completionRate': 0.0,
+        'missingDays': <int>[],
+        'status': 'empty',
+      };
+    }
+
+    final totalCount = groupRoutines.length;
+    final completedCount =
+        groupRoutines.where((r) => r.isCompletedToday).length;
+    final completionRate = completedCount / totalCount;
+
+    // 누락된 일차 확인
+    final existingDays = groupRoutines.map((r) => r.dayNumber ?? 1).toSet();
+    final missingDays = <int>[];
+    for (int day = 1; day <= 3; day++) {
+      if (!existingDays.contains(day)) {
+        missingDays.add(day);
+      }
+    }
+
+    String status;
+    if (missingDays.isNotEmpty) {
+      status = 'incomplete_group'; // 그룹이 불완전함
+    } else if (completionRate == 1.0) {
+      status = 'completed'; // 모든 일차 완료
+    } else if (completionRate > 0) {
+      status = 'in_progress'; // 진행 중
+    } else {
+      status = 'not_started'; // 시작 안함
+    }
+
+    return {
+      'isValid': missingDays.isEmpty,
+      'totalCount': totalCount,
+      'completedCount': completedCount,
+      'completionRate': completionRate,
+      'missingDays': missingDays,
+      'status': status,
+      'groupRoutines': groupRoutines,
+    };
+  }
+
+  // 전체 루틴 상태 요약
+  Map<String, dynamic> getAllRoutinesSummary(List<Routine> routines) {
+    final dailyRoutines = routines.where((r) => !r.isThreeDayRoutine).toList();
+    final threeDayGroups = <String, List<Routine>>{};
+
+    // 3일 루틴 그룹화
+    for (final routine in routines.where((r) => r.isThreeDayRoutine)) {
+      if (routine.groupId != null) {
+        threeDayGroups.putIfAbsent(routine.groupId!, () => []).add(routine);
+      }
+    }
+
+    // 일일 루틴 통계
+    final dailyCompleted =
+        dailyRoutines.where((r) => r.isCompletedToday).length;
+    final dailyTotal = dailyRoutines.length;
+
+    // 3일 루틴 그룹 통계
+    int threeDayGroupsCompleted = 0;
+    int threeDayGroupsValid = 0;
+
+    for (final groupId in threeDayGroups.keys) {
+      final summary = getThreeDayGroupSummary(groupId, routines);
+      if (summary['isValid'] as bool) {
+        threeDayGroupsValid++;
+        if (summary['status'] == 'completed') {
+          threeDayGroupsCompleted++;
+        }
+      }
+    }
+
+    final totalTasks = dailyTotal + threeDayGroupsValid;
+    final totalCompleted = dailyCompleted + threeDayGroupsCompleted;
+    final overallProgress =
+        totalTasks > 0 ? (totalCompleted / totalTasks) * 100 : 0.0;
+
+    return {
+      'daily': {
+        'total': dailyTotal,
+        'completed': dailyCompleted,
+        'rate': dailyTotal > 0 ? dailyCompleted / dailyTotal : 0.0,
+      },
+      'threeDay': {
+        'totalGroups': threeDayGroups.length,
+        'validGroups': threeDayGroupsValid,
+        'completedGroups': threeDayGroupsCompleted,
+        'rate': threeDayGroupsValid > 0
+            ? threeDayGroupsCompleted / threeDayGroupsValid
+            : 0.0,
+      },
+      'overall': {
+        'totalTasks': totalTasks,
+        'completedTasks': totalCompleted,
+        'progress': overallProgress,
+      },
+    };
   }
 }

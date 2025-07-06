@@ -176,13 +176,40 @@ class DashboardScreen extends ConsumerWidget {
                       );
                     }
 
-                    // 3일 루틴 그룹 정보 생성
+                    // 3일 루틴 그룹 정보 생성 및 전체 그룹 찾기
                     final groupedRoutines = <String, List<Routine>>{};
-                    for (final routine in todayRoutines) {
-                      if (routine.groupId != null) {
-                        groupedRoutines
+                    final threeDayGroups = <String, List<Routine>>{};
+
+                    // 전체 루틴에서 3일 루틴 그룹 찾기
+                    for (final routine in routines) {
+                      if (routine.isThreeDayRoutine &&
+                          routine.groupId != null) {
+                        threeDayGroups
                             .putIfAbsent(routine.groupId!, () => [])
                             .add(routine);
+                      }
+                    }
+
+                    // 3일 루틴 그룹들을 dayNumber 순서로 정렬
+                    for (final groupId in threeDayGroups.keys) {
+                      threeDayGroups[groupId]!.sort((a, b) =>
+                          (a.dayNumber ?? 0).compareTo(b.dayNumber ?? 0));
+                    }
+
+                    // 오늘의 루틴에서 그룹 정보 생성
+                    for (final routine in todayRoutines) {
+                      if (routine.groupId != null) {
+                        // 3일 루틴의 경우 전체 그룹을 가져오기
+                        if (routine.isThreeDayRoutine &&
+                            threeDayGroups.containsKey(routine.groupId!)) {
+                          groupedRoutines[routine.groupId!] =
+                              threeDayGroups[routine.groupId!]!;
+                        } else {
+                          // 일일 루틴의 경우 개별 루틴만
+                          groupedRoutines
+                              .putIfAbsent(routine.groupId!, () => [])
+                              .add(routine);
+                        }
                       }
                     }
 

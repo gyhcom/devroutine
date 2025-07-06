@@ -43,6 +43,16 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.routine == null ? '새 루틴' : '루틴 수정'),
+        actions: [
+          // 기존 루틴 수정 시에만 삭제 버튼 표시
+          if (widget.routine != null) ...[
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: _showDeleteConfirmation,
+              tooltip: '루틴 삭제',
+            ),
+          ],
+        ],
       ),
       body: Form(
         key: _formKey,
@@ -182,11 +192,45 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: Text(
-                widget.routine == null ? '루틴 생성' : '루틴 수정',
-                style: const TextStyle(fontSize: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    widget.routine == null ? Icons.add : Icons.edit,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.routine == null ? '루틴 생성' : '루틴 수정',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
               ),
             ),
+
+            // 기존 루틴 수정 시에만 삭제 버튼 표시
+            if (widget.routine != null) ...[
+              const SizedBox(height: 16),
+              OutlinedButton(
+                onPressed: _showDeleteConfirmation,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  side: BorderSide(color: Colors.red.shade400),
+                  foregroundColor: Colors.red.shade600,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.delete_outline, size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      '루틴 삭제',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -244,6 +288,192 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
     );
   }
 
+  // 삭제 확인 다이얼로그 표시
+  Future<void> _showDeleteConfirmation() async {
+    if (widget.routine == null) return;
+
+    final routine = widget.routine!;
+
+    // 3일 루틴의 경우 그룹 삭제 확인
+    if (routine.isThreeDayRoutine && routine.groupId != null) {
+      await _showThreeDayRoutineDeleteDialog();
+    } else {
+      // 일일 루틴 삭제 확인
+      await _showSingleRoutineDeleteDialog();
+    }
+  }
+
+  // 일일 루틴 삭제 확인 다이얼로그
+  Future<void> _showSingleRoutineDeleteDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red.shade600),
+            const SizedBox(width: 8),
+            const Text('루틴 삭제'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '"${widget.routine!.title}" 루틴을 삭제하시겠습니까?',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '이 작업은 되돌릴 수 없습니다.',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red.shade600,
+            ),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteRoutine();
+    }
+  }
+
+  // 3일 루틴 삭제 확인 다이얼로그
+  Future<void> _showThreeDayRoutineDeleteDialog() async {
+    final routine = widget.routine!;
+    final notifier = ref.read(routineNotifierProvider.notifier);
+
+    // 현재 루틴 상태에서 그룹 정보 가져오기
+    final routineState = ref.read(routineNotifierProvider);
+    List<Routine> allRoutines = [];
+
+    routineState.whenOrNull(
+      loaded: (routines) => allRoutines = routines,
+    );
+
+    final groupRoutines =
+        notifier.getThreeDayGroupRoutines(routine.groupId!, allRoutines);
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.orange.shade600),
+            const SizedBox(width: 8),
+            const Text('3일 루틴 삭제'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '"${routine.title}" 루틴을 삭제하시겠습니까?',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '⚠️ 3일 루틴은 그룹으로 관리됩니다',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.orange.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '현재 그룹에 ${groupRoutines.length}개의 루틴이 있습니다.',
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'cancel'),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'single'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.orange.shade600,
+            ),
+            child: const Text('이 루틴만 삭제'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'group'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red.shade600,
+            ),
+            child: const Text('전체 그룹 삭제'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == 'single') {
+      // 개별 루틴 삭제
+      await _deleteRoutine();
+    } else if (result == 'group') {
+      // 전체 그룹 삭제
+      await _deleteThreeDayGroup();
+    }
+  }
+
+  // 루틴 삭제 실행
+  Future<void> _deleteRoutine() async {
+    try {
+      await ref
+          .read(routineNotifierProvider.notifier)
+          .deleteRoutine(widget.routine!.id);
+      await showTopMessage(context, '✅ 루틴이 삭제되었습니다!');
+      context.router.pop();
+    } catch (e) {
+      await showTopMessage(context, '❌ 루틴 삭제 중 오류가 발생했습니다.');
+    }
+  }
+
+  // 3일 루틴 그룹 삭제 실행
+  Future<void> _deleteThreeDayGroup() async {
+    try {
+      await ref
+          .read(routineNotifierProvider.notifier)
+          .deleteThreeDayGroup(widget.routine!.groupId!);
+      await showTopMessage(context, '✅ 3일 루틴 그룹이 삭제되었습니다!');
+      context.router.pop();
+    } catch (e) {
+      await showTopMessage(context, '❌ 그룹 삭제 중 오류가 발생했습니다.');
+    }
+  }
+
   Future<void> _saveRoutine() async {
     if (_formKey.currentState!.validate()) {
       final now = DateTime.now();
@@ -252,12 +482,15 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
         // 새 루틴 생성
         if (_routineType == RoutineType.threeDay) {
           // 3일 루틴: 3개의 루틴 생성
+          // 현재 날짜의 시작 시간으로 설정 (시간대 문제 방지)
+          final today = DateTime(now.year, now.month, now.day);
+
           final threeDayRoutines = Routine.createThreeDayRoutines(
             title: _titleController.text.trim(),
             memo: _memoController.text.trim(),
             tags: [],
             targetCompletionCount: 1,
-            startDate: now,
+            startDate: today,
             priority: _priority,
           );
 
