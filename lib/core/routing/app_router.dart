@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../features/routine/domain/entities/routine.dart';
 import '../../features/routine/presentation/screens/routine_form_screen.dart';
 import '../../features/routine/presentation/screens/routine_list_screen.dart';
+import '../../features/routine/presentation/screens/routine_detail_screen.dart';
 
 part 'app_router.gr.dart';
 
@@ -23,6 +24,10 @@ class AppRouter extends _$AppRouter {
         AutoRoute(
           page: RoutineFormRoute.page,
           path: '/routine-form',
+        ),
+        AutoRoute(
+          page: RoutineDetailRoute.page,
+          path: '/routine-detail',
         ),
       ];
 }

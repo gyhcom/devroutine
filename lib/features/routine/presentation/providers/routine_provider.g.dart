@@ -6,7 +6,7 @@ part of 'routine_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$routineRepositoryHash() => r'a8565f675fe19968c77c4965dc68ed12f77d43c8';
+String _$routineRepositoryHash() => r'd44ea990860c43be92972df289c99b80715559be';
 
 /// See also [routineRepository].
 @ProviderFor(routineRepository)
@@ -24,7 +24,7 @@ final routineRepositoryProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef RoutineRepositoryRef = AutoDisposeProviderRef<RoutineRepository>;
-String _$routineNotifierHash() => r'2db371474f2107d674b969e5f193feee02190b57';
+String _$routineNotifierHash() => r'3a37af72a78879d115fb04f41f6377cb87313abd';
 
 /// See also [RoutineNotifier].
 @ProviderFor(RoutineNotifier)

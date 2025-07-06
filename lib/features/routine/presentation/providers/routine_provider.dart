@@ -376,118 +376,213 @@ class RoutineNotifier extends _$RoutineNotifier {
     );
   }
 
-  Future<void> createRoutine(Routine routine) async {
-    state.whenOrNull(
-      loaded: (routines) async {
-        try {
-          // 백엔드 업데이트를 먼저 시도합니다
-          final result = await _saveRoutineUseCase.execute(routine);
+  Future<bool> createRoutine(Routine routine) async {
+    print('🔄 createRoutine 시작 - 루틴 제목: ${routine.title}');
+    bool success = false;
 
-          if (result case Success()) {
-            // 성공 시 데이터를 새로고침합니다
-            await refreshRoutines();
-          } else if (result case ResultFailure(failure: final failure)) {
-            // 실패 시 에러를 표시합니다
-            state = RoutineState.error(failure.message);
-            Future.delayed(const Duration(seconds: 2), () {
-              state = RoutineState.loaded(routines);
-            });
-          }
-        } catch (e) {
-          // 예외 발생 시 에러를 표시합니다
-          state = RoutineState.error(e.toString());
-          Future.delayed(const Duration(seconds: 2), () {
-            state = RoutineState.loaded(routines);
-          });
-        }
-      },
-      initial: () async {
-        try {
-          // 초기 상태일 경우 바로 새 루틴으로 시작합니다
-          final result = await _saveRoutineUseCase.execute(routine);
+    try {
+      success = await state.when(
+        initial: () async {
+          print('✅ 상태가 initial임 - 초기 루틴 생성');
+          return await _createRoutineInInitialState(routine);
+        },
+        loading: () async {
+          print('⏳ 로딩 중... 잠시 대기 후 재시도');
+          await Future.delayed(const Duration(milliseconds: 500));
+          return await createRoutine(routine); // 재귀 호출
+        },
+        loaded: (routines) async {
+          print('✅ 상태가 loaded임 - 루틴 개수: ${routines.length}');
+          return await _createRoutineInLoadedState(routine, routines);
+        },
+        error: (message) async {
+          print('❌ 오류 상태에서 루틴 생성 시도: $message');
+          // 오류 상태에서는 먼저 데이터를 다시 로드
+          await _loadRoutines();
+          return await createRoutine(routine); // 재귀 호출
+        },
+      );
+    } catch (e) {
+      print('💥 createRoutine 예외: $e');
+      state = RoutineState.error('루틴 생성 중 오류가 발생했습니다: $e');
+      success = false;
+    }
 
-          if (result case Success()) {
-            // 성공 시 데이터를 새로고침합니다
-            await refreshRoutines();
-          } else if (result case ResultFailure(failure: final failure)) {
-            state = RoutineState.error(failure.message);
-            Future.delayed(const Duration(seconds: 2), () {
-              state = const RoutineState.initial();
-            });
-          }
-        } catch (e) {
-          state = RoutineState.error(e.toString());
-          Future.delayed(const Duration(seconds: 2), () {
-            state = const RoutineState.initial();
-          });
-        }
-      },
-    );
+    print('✅ createRoutine 완료 - 성공: $success');
+    return success;
+  }
+
+  Future<bool> _createRoutineInLoadedState(
+      Routine routine, List<Routine> routines) async {
+    try {
+      print('🔄 loaded 상태에서 루틴 생성 시작');
+      final result = await _saveRoutineUseCase.execute(routine);
+
+      if (result case Success()) {
+        print('✅ 루틴 저장 성공 - 데이터 새로고침 시작');
+        await refreshRoutines();
+        print('✅ 데이터 새로고침 완료');
+        return true;
+      } else if (result case ResultFailure(failure: final failure)) {
+        print('❌ 루틴 저장 실패: ${failure.message}');
+        state = RoutineState.error(failure.message);
+        Future.delayed(const Duration(seconds: 2), () {
+          state = RoutineState.loaded(routines);
+        });
+        return false;
+      }
+    } catch (e) {
+      print('💥 _createRoutineInLoadedState 예외: $e');
+      state = RoutineState.error(e.toString());
+      Future.delayed(const Duration(seconds: 2), () {
+        state = RoutineState.loaded(routines);
+      });
+      return false;
+    }
+    return false;
+  }
+
+  Future<bool> _createRoutineInInitialState(Routine routine) async {
+    try {
+      print('🔄 initial 상태에서 루틴 생성 시작');
+      final result = await _saveRoutineUseCase.execute(routine);
+
+      if (result case Success()) {
+        print('✅ 루틴 저장 성공 - 데이터 새로고침 시작');
+        await refreshRoutines();
+        print('✅ 데이터 새로고침 완료');
+        return true;
+      } else if (result case ResultFailure(failure: final failure)) {
+        print('❌ 루틴 저장 실패: ${failure.message}');
+        state = RoutineState.error(failure.message);
+        Future.delayed(const Duration(seconds: 2), () {
+          state = const RoutineState.initial();
+        });
+        return false;
+      }
+    } catch (e) {
+      print('💥 _createRoutineInInitialState 예외: $e');
+      state = RoutineState.error(e.toString());
+      Future.delayed(const Duration(seconds: 2), () {
+        state = const RoutineState.initial();
+      });
+      return false;
+    }
+    return false;
   }
 
   // 3일 루틴 다중 생성 메서드
-  Future<void> createThreeDayRoutines(List<Routine> routines) async {
-    state.whenOrNull(
-      loaded: (existingRoutines) async {
-        try {
-          // 모든 루틴을 순차적으로 저장합니다
-          for (final routine in routines) {
-            final result = await _saveRoutineUseCase.execute(routine);
-            if (result case ResultFailure(failure: final failure)) {
-              // 실패 시 에러를 표시합니다
-              state = RoutineState.error(failure.message);
-              Future.delayed(const Duration(seconds: 2), () {
-                state = RoutineState.loaded(existingRoutines);
-              });
-              return;
-            }
-          }
+  Future<bool> createThreeDayRoutines(List<Routine> routines) async {
+    print('🔄 createThreeDayRoutines 시작 - 루틴 개수: ${routines.length}');
+    bool success = false;
 
-          // 모든 루틴 저장 성공 시 데이터를 새로고침합니다
-          await refreshRoutines();
-        } catch (e) {
-          // 예외 발생 시 에러를 표시합니다
-          state = RoutineState.error(e.toString());
+    try {
+      success = await state.when(
+        initial: () async {
+          print('✅ 상태가 initial임 - 초기 3일 루틴 생성');
+          return await _createThreeDayRoutinesInInitialState(routines);
+        },
+        loading: () async {
+          print('⏳ 로딩 중... 잠시 대기 후 재시도');
+          await Future.delayed(const Duration(milliseconds: 500));
+          return await createThreeDayRoutines(routines); // 재귀 호출
+        },
+        loaded: (existingRoutines) async {
+          print('✅ 상태가 loaded임 - 기존 루틴 개수: ${existingRoutines.length}');
+          return await _createThreeDayRoutinesInLoadedState(
+              routines, existingRoutines);
+        },
+        error: (message) async {
+          print('❌ 오류 상태에서 3일 루틴 생성 시도: $message');
+          // 오류 상태에서는 먼저 데이터를 다시 로드
+          await _loadRoutines();
+          return await createThreeDayRoutines(routines); // 재귀 호출
+        },
+      );
+    } catch (e) {
+      print('💥 createThreeDayRoutines 예외: $e');
+      state = RoutineState.error('3일 루틴 생성 중 오류가 발생했습니다: $e');
+      success = false;
+    }
+
+    print('✅ createThreeDayRoutines 완료 - 성공: $success');
+    return success;
+  }
+
+  Future<bool> _createThreeDayRoutinesInLoadedState(
+      List<Routine> routines, List<Routine> existingRoutines) async {
+    try {
+      print('🔄 loaded 상태에서 3일 루틴 생성 시작');
+      // 모든 루틴을 순차적으로 저장합니다
+      for (final routine in routines) {
+        final result = await _saveRoutineUseCase.execute(routine);
+        if (result case ResultFailure(failure: final failure)) {
+          print('❌ 3일 루틴 저장 실패: ${failure.message}');
+          state = RoutineState.error(failure.message);
           Future.delayed(const Duration(seconds: 2), () {
             state = RoutineState.loaded(existingRoutines);
           });
+          return false;
         }
-      },
-      initial: () async {
-        try {
-          // 모든 루틴을 순차적으로 저장합니다
-          for (final routine in routines) {
-            final result = await _saveRoutineUseCase.execute(routine);
-            if (result case ResultFailure(failure: final failure)) {
-              state = RoutineState.error(failure.message);
-              Future.delayed(const Duration(seconds: 2), () {
-                state = const RoutineState.initial();
-              });
-              return;
-            }
-          }
+      }
 
-          // 모든 루틴 저장 성공 시 데이터를 새로고침합니다
-          await refreshRoutines();
-        } catch (e) {
-          state = RoutineState.error(e.toString());
+      // 모든 루틴 저장 성공 시 데이터를 새로고침합니다
+      print('✅ 모든 3일 루틴 저장 성공 - 데이터 새로고침 시작');
+      await refreshRoutines();
+      print('✅ 데이터 새로고침 완료');
+      return true;
+    } catch (e) {
+      print('💥 _createThreeDayRoutinesInLoadedState 예외: $e');
+      state = RoutineState.error(e.toString());
+      Future.delayed(const Duration(seconds: 2), () {
+        state = RoutineState.loaded(existingRoutines);
+      });
+      return false;
+    }
+  }
+
+  Future<bool> _createThreeDayRoutinesInInitialState(
+      List<Routine> routines) async {
+    try {
+      print('🔄 initial 상태에서 3일 루틴 생성 시작');
+      // 모든 루틴을 순차적으로 저장합니다
+      for (final routine in routines) {
+        final result = await _saveRoutineUseCase.execute(routine);
+        if (result case ResultFailure(failure: final failure)) {
+          print('❌ 3일 루틴 저장 실패: ${failure.message}');
+          state = RoutineState.error(failure.message);
           Future.delayed(const Duration(seconds: 2), () {
             state = const RoutineState.initial();
           });
+          return false;
         }
-      },
-    );
+      }
+
+      // 모든 루틴 저장 성공 시 데이터를 새로고침합니다
+      print('✅ 모든 3일 루틴 저장 성공 - 데이터 새로고침 시작');
+      await refreshRoutines();
+      print('✅ 데이터 새로고침 완료');
+      return true;
+    } catch (e) {
+      print('💥 _createThreeDayRoutinesInInitialState 예외: $e');
+      state = RoutineState.error(e.toString());
+      Future.delayed(const Duration(seconds: 2), () {
+        state = const RoutineState.initial();
+      });
+      return false;
+    }
   }
 
-  Future<void> updateRoutine(Routine routine) async {
-    state.whenOrNull(
+  Future<bool> updateRoutine(Routine routine) async {
+    bool success = false;
+    await state.whenOrNull(
       loaded: (routines) async {
         try {
           // 현재 루틴 목록에서 업데이트할 루틴의 인덱스를 찾습니다
           final routineIndex = routines.indexWhere((r) => r.id == routine.id);
           if (routineIndex == -1) return;
 
-          final originalRoutine = routines[routineIndex];
+          // final originalRoutine = routines[routineIndex]; // 현재 사용하지 않음
 
           // 3일 루틴의 경우 그룹 일관성 검증
           if (routine.isThreeDayRoutine && routine.groupId != null) {
@@ -519,6 +614,7 @@ class RoutineNotifier extends _$RoutineNotifier {
           if (result case Success()) {
             // 성공 시 데이터를 새로고침합니다
             await refreshRoutines();
+            success = true;
           } else if (result case ResultFailure(failure: final failure)) {
             // 실패 시 에러를 표시합니다
             state = RoutineState.error(failure.message);
@@ -535,6 +631,7 @@ class RoutineNotifier extends _$RoutineNotifier {
         }
       },
     );
+    return success;
   }
 
   // 3일 루틴 제목 업데이트 유효성 검증

@@ -2,14 +2,111 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/routine.dart';
 import '../providers/routine_provider.dart';
+import '../utils/priority_color_util.dart';
 import 'package:auto_route/auto_route.dart';
 import '../../../../core/routing/app_router.dart';
+
+// 상수 정의
+class RoutineCardConstants {
+  static const double cardBorderRadius = 16.0;
+  static const double cardMarginBottom = 8.0;
+  static const double cardPadding = 12.0;
+  static const double iconSize = 16.0;
+  static const double buttonSize = 44.0;
+  static const double priorityIndicatorWidth = 4.0;
+  static const double priorityIndicatorHeight = 32.0;
+  static const Duration animationDuration = Duration(milliseconds: 600);
+  static const Duration feedbackDuration = Duration(seconds: 2);
+}
+
+// 스타일 클래스
+class RoutineCardStyles {
+  static BoxDecoration cardDecoration(Color borderColor,
+      {bool isFiltered = false, Priority? priority}) {
+    if (isFiltered && priority != null) {
+      return BoxDecoration(
+        color: getPriorityBackgroundColor(priority),
+        borderRadius:
+            BorderRadius.circular(RoutineCardConstants.cardBorderRadius),
+        border: Border.all(
+          color: getPriorityBorderColor(priority),
+          width: 2, // 필터링 시 더 굵은 테두리
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: getPriorityBorderColor(priority).withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      );
+    }
+
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius:
+          BorderRadius.circular(RoutineCardConstants.cardBorderRadius),
+      border: Border.all(
+        color: borderColor.withOpacity(0.3),
+        width: 1,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 8,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    );
+  }
+
+  static TextStyle titleStyle(bool isCompleted) => TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        decoration: isCompleted ? TextDecoration.lineThrough : null,
+        color: isCompleted ? Colors.grey.shade600 : Colors.black87,
+      );
+
+  static TextStyle subtitleStyle() => TextStyle(
+        fontSize: 12,
+        color: Colors.grey.shade600,
+      );
+
+  static TextStyle priorityLabelStyle(Color color) => TextStyle(
+        fontSize: 10,
+        fontWeight: FontWeight.w600,
+        color: color,
+      );
+}
+
+// 루틴 상태 정보를 담는 클래스
+class RoutineStatus {
+  final bool isCompleted;
+  final bool isToday;
+  final bool isPast;
+  final bool isFuture;
+  final Color color;
+  final IconData icon;
+  final String statusText;
+
+  RoutineStatus({
+    required this.isCompleted,
+    required this.isToday,
+    required this.isPast,
+    required this.isFuture,
+    required this.color,
+    required this.icon,
+    required this.statusText,
+  });
+}
 
 class RoutineCard extends ConsumerStatefulWidget {
   final Routine routine;
   final VoidCallback onTap;
   final Color borderColor;
   final List<Routine>? groupRoutines; // 3일 루틴 그룹 (선택적)
+  final bool isFiltered; // 필터링된 상태인지
+  final Priority? filterPriority; // 현재 필터링된 우선순위
 
   const RoutineCard({
     super.key,
@@ -17,6 +114,8 @@ class RoutineCard extends ConsumerStatefulWidget {
     required this.onTap,
     required this.borderColor,
     this.groupRoutines,
+    this.isFiltered = false,
+    this.filterPriority,
   });
 
   @override
@@ -28,11 +127,31 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
 
+  // 완료 애니메이션 컨트롤러
+  late AnimationController _completionAnimationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  // 캐시된 오늘 날짜 (성능 최적화)
+  late final DateTime _today;
+  late final DateTime _todayDate;
+
+  // 완료 상태 추적
+  bool _isCompleting = false;
+  bool _shouldHide = false;
+
   @override
   void initState() {
     super.initState();
+
+    // 오늘 날짜 캐싱
+    _today = DateTime.now();
+    _todayDate = DateTime(_today.year, _today.month, _today.day);
+
+    // 기본 애니메이션 컨트롤러
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: RoutineCardConstants.animationDuration,
       vsync: this,
     );
     _pulseAnimation = Tween<double>(
@@ -42,11 +161,45 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
+
+    // 완료 애니메이션 컨트롤러
+    _completionAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    // 크기 축소 애니메이션
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _completionAnimationController,
+      curve: const Interval(0.3, 1.0, curve: Curves.easeInBack),
+    ));
+
+    // 투명도 애니메이션
+    _opacityAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _completionAnimationController,
+      curve: const Interval(0.0, 0.7, curve: Curves.easeOut),
+    ));
+
+    // 슬라이드 애니메이션
+    _slideAnimation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(1.0, 0.0),
+    ).animate(CurvedAnimation(
+      parent: _completionAnimationController,
+      curve: const Interval(0.2, 0.8, curve: Curves.easeInOut),
+    ));
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _completionAnimationController.dispose();
     super.dispose();
   }
 
@@ -54,73 +207,71 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
   Widget build(BuildContext context) {
     final isThreeDayRoutine = widget.routine.isThreeDayRoutine;
 
-    return AnimatedBuilder(
-      animation: _pulseAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _pulseAnimation.value,
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: widget.borderColor.withOpacity(0.3),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
+    // 완료 애니메이션이 끝나면 카드를 숨김
+    if (_shouldHide) {
+      return const SizedBox.shrink();
+    }
+
+    return Semantics(
+      label: '${widget.routine.title} 루틴 카드',
+      child: AnimatedBuilder(
+        animation: Listenable.merge([
+          _pulseAnimation,
+          _completionAnimationController,
+        ]),
+        builder: (context, child) {
+          return SlideTransition(
+            position: _slideAnimation,
+            child: Transform.scale(
+              scale: _pulseAnimation.value * _scaleAnimation.value,
+              child: Opacity(
+                opacity: _opacityAnimation.value,
+                child: Container(
+                  margin: const EdgeInsets.only(
+                      bottom: RoutineCardConstants.cardMarginBottom),
+                  decoration: RoutineCardStyles.cardDecoration(
+                    widget.borderColor,
+                    isFiltered: widget.isFiltered,
+                    priority: widget.filterPriority,
+                  ),
+                  child: isThreeDayRoutine
+                      ? _buildThreeDayRoutineCard(widget.groupRoutines ?? [])
+                      : _buildDailyCard(),
                 ),
-              ],
+              ),
             ),
-            child: isThreeDayRoutine
-                ? _buildThreeDayRoutineCard(widget.groupRoutines ?? [])
-                : _buildDailyCard(),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
   Widget _buildDailyCard() {
     final isCompleted = widget.routine.isCompletedToday;
-    final priorityColor = _getPriorityColor(widget.routine.priority);
-    final priorityLabel = _getPriorityLabel(widget.routine.priority);
 
     return InkWell(
       onTap: widget.onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(RoutineCardConstants.cardPadding),
         child: Row(
           children: [
-            // 우선순위 표시 (색상 + 라벨)
-            Column(
-              children: [
-                Container(
-                  width: 6,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: priorityColor,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  priorityLabel,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: priorityColor,
-                  ),
-                ),
-              ],
+            // 완료 상태 아이콘
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: isCompleted ? Colors.green : Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                isCompleted ? Icons.check : Icons.radio_button_unchecked,
+                color: Colors.white,
+                size: 16,
+              ),
             ),
 
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
 
             // 제목과 설명
             Expanded(
@@ -130,7 +281,7 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
                   Text(
                     widget.routine.title,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                       decoration:
                           isCompleted ? TextDecoration.lineThrough : null,
@@ -138,19 +289,19 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
                           isCompleted ? Colors.grey.shade600 : Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                   Row(
                     children: [
                       Icon(
                         Icons.today,
                         color: Colors.blue.shade400,
-                        size: 16,
+                        size: 14,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '일일 루틴',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           color: Colors.grey.shade600,
                         ),
                       ),
@@ -164,12 +315,12 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
             GestureDetector(
               onTap: () => _toggleCompletion(showFeedback: true),
               child: Container(
-                width: 48,
-                height: 48,
+                width: RoutineCardConstants.buttonSize,
+                height: RoutineCardConstants.buttonSize,
                 decoration: BoxDecoration(
                   color:
                       isCompleted ? Colors.green.shade50 : Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isCompleted
                         ? Colors.green.shade200
@@ -184,7 +335,7 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
                   color: isCompleted
                       ? Colors.green.shade600
                       : Colors.grey.shade400,
-                  size: 24,
+                  size: 22,
                 ),
               ),
             ),
@@ -207,7 +358,6 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: widget.borderColor, width: 2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -219,9 +369,12 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          childrenPadding:
-              const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          tilePadding: const EdgeInsets.symmetric(
+              horizontal: RoutineCardConstants.cardPadding, vertical: 6),
+          childrenPadding: const EdgeInsets.only(
+              left: RoutineCardConstants.cardPadding,
+              right: RoutineCardConstants.cardPadding,
+              bottom: RoutineCardConstants.cardPadding),
           leading: _buildCircularProgress(progress, currentDay, totalCount),
           // 확장/축소 상태 제어
           controlAffinity: ListTileControlAffinity.trailing,
@@ -236,7 +389,7 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
                     child: Text(
                       widget.routine.title,
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.w600,
                         decoration: isFullyCompleted
                             ? TextDecoration.lineThrough
@@ -252,19 +405,19 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
                   _buildCompactProgressIndicator(groupRoutines),
                 ],
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Row(
                 children: [
                   Icon(
                     Icons.local_fire_department,
                     color: Colors.orange.shade600,
-                    size: 16,
+                    size: 14,
                   ),
                   const SizedBox(width: 4),
                   Text(
                     '3일 챌린지 - Day $currentDay/$totalCount',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 11,
                       color: Colors.grey.shade600,
                     ),
                   ),
@@ -273,13 +426,13 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
                   GestureDetector(
                     onTap: () => _toggleCompletion(showFeedback: true),
                     child: Container(
-                      width: 40,
-                      height: 40,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
                         color: widget.routine.isCompletedToday
                             ? Colors.green.shade50
                             : Colors.orange.shade50,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: widget.routine.isCompletedToday
                               ? Colors.green.shade200
@@ -294,20 +447,20 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
                         color: widget.routine.isCompletedToday
                             ? Colors.green.shade600
                             : Colors.orange.shade400,
-                        size: 20,
+                        size: 18,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               // 전체 진행 상황 미리보기 - 간소화
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: Row(
@@ -315,14 +468,14 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
                   children: [
                     Icon(
                       Icons.expand_more,
-                      size: 16,
+                      size: 14,
                       color: Colors.grey.shade600,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       '세부 진행 상황 보기',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         color: Colors.grey.shade600,
                         fontWeight: FontWeight.w500,
                       ),
@@ -377,14 +530,14 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
   Widget _buildCircularProgress(
       double progress, int currentDay, int totalCount) {
     return SizedBox(
-      width: 50,
-      height: 50,
+      width: 42,
+      height: 42,
       child: Stack(
         alignment: Alignment.center,
         children: [
           CircularProgressIndicator(
             value: progress,
-            strokeWidth: 4,
+            strokeWidth: 3,
             backgroundColor: Colors.grey.shade200,
             valueColor: AlwaysStoppedAnimation(
               progress == 1.0 ? Colors.green.shade400 : Colors.orange.shade400,
@@ -393,7 +546,7 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
           Text(
             '$currentDay/$totalCount',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.bold,
               color: progress == 1.0
                   ? Colors.green.shade600
@@ -406,9 +559,6 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
   }
 
   Widget _buildDetailedProgress(List<Routine> groupRoutines) {
-    final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -424,20 +574,18 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
         ...groupRoutines.asMap().entries.map((entry) {
           final index = entry.key;
           final routine = entry.value;
-          final isCompleted = routine.isCompletedToday == true;
-          // 오늘 날짜와 루틴의 startDate가 같은지 확인
-          final routineDate = DateTime(routine.startDate.year,
-              routine.startDate.month, routine.startDate.day);
-          final isToday = routineDate.isAtSameMomentAs(todayDate);
+          final status = _getRoutineStatus(routine);
 
           return Container(
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: isToday ? Colors.blue.shade50 : Colors.grey.shade50,
+              color: status.isToday ? Colors.blue.shade50 : Colors.grey.shade50,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: isToday ? Colors.blue.shade200 : Colors.grey.shade200,
+                color: status.isToday
+                    ? Colors.blue.shade200
+                    : Colors.grey.shade200,
                 width: 1,
               ),
             ),
@@ -447,15 +595,15 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: isCompleted
+                    color: status.isCompleted
                         ? Colors.green.shade400
-                        : isToday
+                        : status.isToday
                             ? Colors.blue.shade400
                             : Colors.grey.shade300,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Center(
-                    child: isCompleted
+                    child: status.isCompleted
                         ? const Icon(Icons.check, color: Colors.white, size: 16)
                         : Text(
                             '${index + 1}',
@@ -477,16 +625,15 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color:
-                              isToday ? Colors.blue.shade700 : Colors.black87,
+                          color: status.isToday
+                              ? Colors.blue.shade700
+                              : Colors.black87,
                         ),
                       ),
                       Text(
-                        isCompleted
-                            ? '완료됨'
-                            : isToday
-                                ? '오늘 할 일'
-                                : '예정',
+                        status.statusText == '오늘'
+                            ? '오늘 할 일'
+                            : status.statusText,
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade600,
@@ -505,9 +652,6 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
 
   // 전체 진행 상황 미리보기 위젯
   Widget _buildProgressPreview(List<Routine> groupRoutines) {
-    final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
-
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -520,29 +664,24 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
         children: groupRoutines.asMap().entries.map((entry) {
           final index = entry.key;
           final routine = entry.value;
-          final isCompleted = routine.isCompletedToday == true;
-          // 오늘 날짜와 루틴의 startDate가 같은지 확인
-          final routineDate = DateTime(routine.startDate.year,
-              routine.startDate.month, routine.startDate.day);
-          final isToday = routineDate.isAtSameMomentAs(todayDate);
-          final isPast = routineDate.isBefore(todayDate);
-          final isFuture = routineDate.isAfter(todayDate);
+          final status = _getRoutineStatus(routine);
 
           return GestureDetector(
-            onTap: isToday ? () => _navigateToRoutineDetail(routine) : null,
+            onTap:
+                status.isToday ? () => _navigateToRoutineDetail(routine) : null,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
               decoration: BoxDecoration(
-                color: isToday
+                color: status.isToday
                     ? Colors.blue.shade100
-                    : isCompleted
+                    : status.isCompleted
                         ? Colors.green.shade100
                         : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(4),
                 border: Border.all(
-                  color: isToday
+                  color: status.isToday
                       ? Colors.blue.shade300
-                      : isCompleted
+                      : status.isCompleted
                           ? Colors.green.shade300
                           : Colors.grey.shade300,
                   width: 1,
@@ -552,26 +691,20 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
                 children: [
                   // 체크박스
                   Icon(
-                    isCompleted
-                        ? Icons.check_circle
-                        : Icons.radio_button_unchecked,
-                    color: isCompleted
-                        ? Colors.green.shade600
-                        : isToday
-                            ? Colors.blue.shade600
-                            : Colors.grey.shade400,
-                    size: 16,
+                    status.icon,
+                    color: status.color,
+                    size: 14,
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 1),
                   // 일차 텍스트
                   Text(
                     '${index + 1}일차',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 9,
                       fontWeight: FontWeight.w600,
-                      color: isToday
+                      color: status.isToday
                           ? Colors.blue.shade700
-                          : isCompleted
+                          : status.isCompleted
                               ? Colors.green.shade700
                               : Colors.grey.shade600,
                     ),
@@ -580,25 +713,26 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
                   Text(
                     _getDayLabel(routine.startDate),
                     style: TextStyle(
-                      fontSize: 8,
-                      color:
-                          isToday ? Colors.blue.shade500 : Colors.grey.shade500,
+                      fontSize: 7,
+                      color: status.isToday
+                          ? Colors.blue.shade500
+                          : Colors.grey.shade500,
                     ),
                   ),
                   // 오늘 표시 (오늘의 할일인 경우)
-                  if (isToday) ...[
-                    const SizedBox(height: 2),
+                  if (status.isToday) ...[
+                    const SizedBox(height: 1),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 1),
+                          horizontal: 3, vertical: 1),
                       decoration: BoxDecoration(
                         color: Colors.blue.shade600,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(3),
                       ),
                       child: Text(
                         '오늘',
                         style: TextStyle(
-                          fontSize: 6,
+                          fontSize: 5,
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -639,9 +773,11 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
   }
 
   // 루틴 상세 페이지로 이동
-  void _navigateToRoutineDetail(Routine routine) {
-    // AutoRoute를 사용하여 루틴 수정 페이지로 이동
-    context.router.push(RoutineFormRoute(routine: routine));
+  void _navigateToRoutineDetail(Routine routine) async {
+    // AutoRoute를 사용하여 루틴 상세 페이지로 이동 후 돌아올 때 자동 새로고침
+    await context.router.push(RoutineDetailRoute(routine: routine));
+    // 상세화면에서 돌아온 후 새로고침
+    ref.read(routineNotifierProvider.notifier).refreshRoutines();
   }
 
   String _getPriorityLabel(Priority priority) {
@@ -667,18 +803,43 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
   }
 
   void _toggleCompletion({bool showFeedback = false}) {
-    _animationController.forward().then((_) {
-      _animationController.reverse();
-    });
-
     final wasCompleted = widget.routine.isCompletedToday;
 
-    ref
-        .read(routineNotifierProvider.notifier)
-        .toggleRoutineCompletion(widget.routine.id);
+    // 완료 중이면 중복 실행 방지
+    if (_isCompleting) return;
 
-    if (showFeedback && !wasCompleted) {
-      _showCompletionFeedback();
+    if (!wasCompleted) {
+      // 완료 처리
+      _isCompleting = true;
+
+      // 즉시 완료 상태로 변경
+      ref
+          .read(routineNotifierProvider.notifier)
+          .toggleRoutineCompletion(widget.routine.id);
+
+      // 완료 애니메이션 실행
+      _completionAnimationController.forward().then((_) {
+        // 애니메이션 완료 후 카드 숨김
+        if (mounted) {
+          setState(() {
+            _shouldHide = true;
+          });
+        }
+      });
+
+      // 완료 메시지 표시
+      if (showFeedback) {
+        _showCompletionFeedback();
+      }
+    } else {
+      // 완료 취소 (일반적인 토글)
+      _animationController.forward().then((_) {
+        _animationController.reverse();
+      });
+
+      ref
+          .read(routineNotifierProvider.notifier)
+          .toggleRoutineCompletion(widget.routine.id);
     }
   }
 
@@ -790,54 +951,167 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
   }
 
   Widget _buildCompactProgressIndicator(List<Routine> groupRoutines) {
-    final today = DateTime.now();
-    final todayDate = DateTime(today.year, today.month, today.day);
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: groupRoutines.asMap().entries.map((entry) {
         final index = entry.key;
         final routine = entry.value;
-        final isCompleted = routine.isCompletedToday == true;
-
-        // 오늘 날짜와 루틴의 startDate가 같은지 확인
-        final routineDate = DateTime(routine.startDate.year,
-            routine.startDate.month, routine.startDate.day);
-        final isToday = routineDate.isAtSameMomentAs(todayDate);
-        final isPast = routineDate.isBefore(todayDate);
-        final isFuture = routineDate.isAfter(todayDate);
-
-        Color dotColor;
-        IconData dotIcon;
-
-        if (isCompleted) {
-          dotColor = Colors.green.shade600;
-          dotIcon = Icons.check_circle;
-        } else if (isToday) {
-          dotColor = Colors.blue.shade600;
-          dotIcon = Icons.radio_button_unchecked;
-        } else if (isPast) {
-          dotColor = Colors.red.shade400;
-          dotIcon = Icons.cancel;
-        } else {
-          dotColor = Colors.grey.shade400;
-          dotIcon = Icons.radio_button_unchecked;
-        }
+        final status = _getRoutineStatus(routine);
 
         return Container(
           margin:
               EdgeInsets.only(right: index < groupRoutines.length - 1 ? 4 : 0),
           child: Tooltip(
-            message:
-                '${index + 1}일차 ${isCompleted ? '완료' : isToday ? '오늘' : isPast ? '미완료' : '예정'}',
+            message: '${index + 1}일차 ${status.statusText}',
             child: Icon(
-              dotIcon,
+              status.icon,
               size: 16,
-              color: dotColor,
+              color: status.color,
             ),
           ),
         );
       }).toList(),
+    );
+  }
+
+  // 루틴 상태 계산 (중복 제거)
+  RoutineStatus _getRoutineStatus(Routine routine) {
+    final routineDate = DateTime(
+      routine.startDate.year,
+      routine.startDate.month,
+      routine.startDate.day,
+    );
+
+    final isCompleted = routine.isCompletedToday == true;
+    final isToday = routineDate.isAtSameMomentAs(_todayDate);
+    final isPast = routineDate.isBefore(_todayDate);
+    final isFuture = routineDate.isAfter(_todayDate);
+
+    Color color;
+    IconData icon;
+    String statusText;
+
+    if (isCompleted) {
+      color = Colors.green.shade600;
+      icon = Icons.check_circle;
+      statusText = '완료';
+    } else if (isToday) {
+      color = Colors.blue.shade600;
+      icon = Icons.radio_button_unchecked;
+      statusText = '오늘';
+    } else if (isPast) {
+      color = Colors.red.shade400;
+      icon = Icons.cancel;
+      statusText = '미완료';
+    } else {
+      color = Colors.grey.shade400;
+      icon = Icons.radio_button_unchecked;
+      statusText = '예정';
+    }
+
+    return RoutineStatus(
+      isCompleted: isCompleted,
+      isToday: isToday,
+      isPast: isPast,
+      isFuture: isFuture,
+      color: color,
+      icon: icon,
+      statusText: statusText,
+    );
+  }
+}
+
+// 우선순위 표시 위젯
+class PriorityIndicator extends StatelessWidget {
+  final Priority priority;
+
+  const PriorityIndicator({super.key, required this.priority});
+
+  @override
+  Widget build(BuildContext context) {
+    final priorityColor = _getPriorityColor(priority);
+    final priorityLabel = _getPriorityLabel(priority);
+
+    return Column(
+      children: [
+        Container(
+          width: RoutineCardConstants.priorityIndicatorWidth,
+          height: RoutineCardConstants.priorityIndicatorHeight,
+          decoration: BoxDecoration(
+            color: priorityColor,
+            borderRadius: BorderRadius.circular(3),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          priorityLabel,
+          style: RoutineCardStyles.priorityLabelStyle(priorityColor),
+        ),
+      ],
+    );
+  }
+
+  Color _getPriorityColor(Priority priority) {
+    switch (priority) {
+      case Priority.high:
+        return Colors.red.shade400;
+      case Priority.medium:
+        return Colors.orange.shade400;
+      case Priority.low:
+        return Colors.green.shade400;
+    }
+  }
+
+  String _getPriorityLabel(Priority priority) {
+    switch (priority) {
+      case Priority.high:
+        return 'HIGH';
+      case Priority.medium:
+        return 'MID';
+      case Priority.low:
+        return 'LOW';
+    }
+  }
+}
+
+// 완료 버튼 위젯
+class CompletionButton extends StatelessWidget {
+  final bool isCompleted;
+  final VoidCallback onTap;
+  final double size;
+
+  const CompletionButton({
+    super.key,
+    required this.isCompleted,
+    required this.onTap,
+    this.size = RoutineCardConstants.buttonSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: isCompleted ? '완료됨' : '완료하기',
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: isCompleted ? Colors.green.shade50 : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isCompleted ? Colors.green.shade200 : Colors.grey.shade200,
+              width: 1,
+            ),
+          ),
+          child: Icon(
+            isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
+            color: isCompleted ? Colors.green.shade600 : Colors.grey.shade400,
+            size: size * 0.5,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -477,59 +477,95 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
   Future<void> _saveRoutine() async {
     if (_formKey.currentState!.validate()) {
       final now = DateTime.now();
+      bool success = false;
 
-      if (widget.routine == null) {
-        // 새 루틴 생성
-        if (_routineType == RoutineType.threeDay) {
-          // 3일 루틴: 3개의 루틴 생성
-          // 현재 날짜의 시작 시간으로 설정 (시간대 문제 방지)
-          final today = DateTime(now.year, now.month, now.day);
+      try {
+        if (widget.routine == null) {
+          // 새 루틴 생성
+          if (_routineType == RoutineType.threeDay) {
+            // 3일 루틴: 3개의 루틴 생성
+            print('🚀 3일 루틴 생성 시작...');
+            final today = DateTime(now.year, now.month, now.day);
 
-          final threeDayRoutines = Routine.createThreeDayRoutines(
-            title: _titleController.text.trim(),
-            memo: _memoController.text.trim(),
-            tags: [],
-            targetCompletionCount: 1,
-            startDate: today,
-            priority: _priority,
-          );
+            final threeDayRoutines = Routine.createThreeDayRoutines(
+              title: _titleController.text.trim(),
+              memo: _memoController.text.trim(),
+              tags: [],
+              targetCompletionCount: 1,
+              startDate: today,
+              priority: _priority,
+            );
 
-          ref
-              .read(routineNotifierProvider.notifier)
-              .createThreeDayRoutines(threeDayRoutines);
-          await showTopMessage(context, '🚀 3일 챌린지가 시작되었습니다! 함께 완주해봐요!');
+            print('📝 생성할 3일 루틴 개수: ${threeDayRoutines.length}');
+            success = await ref
+                .read(routineNotifierProvider.notifier)
+                .createThreeDayRoutines(threeDayRoutines);
+            print('✅ 3일 루틴 생성 결과: $success');
+
+            if (success) {
+              await showTopMessage(context, '🚀 3일 챌린지가 시작되었습니다! 함께 완주해봐요!');
+            } else {
+              await showTopMessage(context, '❌ 3일 루틴 생성에 실패했습니다.');
+            }
+          } else {
+            // 일일 루틴: 1개의 루틴 생성
+            print('📅 일일 루틴 생성 시작...');
+            final routine = Routine.create(
+              title: _titleController.text.trim(),
+              memo: _memoController.text.trim(),
+              tags: [],
+              targetCompletionCount: 1,
+              startDate: now,
+              endDate: null, // 일일 루틴은 종료일 없이 계속 반복
+              priority: _priority,
+              routineType: RoutineType.daily,
+            );
+
+            success = await ref
+                .read(routineNotifierProvider.notifier)
+                .createRoutine(routine);
+            print('✅ 일일 루틴 생성 결과: $success');
+
+            if (success) {
+              await showTopMessage(context, '✅ 루틴이 생성되었습니다!');
+            } else {
+              await showTopMessage(context, '❌ 루틴 생성에 실패했습니다.');
+            }
+          }
         } else {
-          // 일일 루틴: 1개의 루틴 생성
-          final routine = Routine.create(
+          // 기존 루틴 수정
+          print('✏️ 루틴 수정 시작...');
+          final updatedRoutine = widget.routine!.copyWith(
             title: _titleController.text.trim(),
             memo: _memoController.text.trim(),
-            tags: [],
-            targetCompletionCount: 1,
-            startDate: now,
-            endDate: DateTime(now.year, now.month, now.day, 23, 59, 59),
             priority: _priority,
-            routineType: RoutineType.daily,
+            updatedAt: now,
           );
 
-          ref.read(routineNotifierProvider.notifier).createRoutine(routine);
-          await showTopMessage(context, '✅ 루틴이 생성되었습니다!');
+          success = await ref
+              .read(routineNotifierProvider.notifier)
+              .updateRoutine(updatedRoutine);
+          print('✅ 루틴 수정 결과: $success');
+
+          if (success) {
+            await showTopMessage(context, '✅ 루틴이 수정되었습니다!');
+          } else {
+            await showTopMessage(context, '❌ 루틴 수정에 실패했습니다.');
+          }
         }
-      } else {
-        // 기존 루틴 수정
-        final updatedRoutine = widget.routine!.copyWith(
-          title: _titleController.text.trim(),
-          memo: _memoController.text.trim(),
-          priority: _priority,
-          updatedAt: now,
-        );
 
-        ref
-            .read(routineNotifierProvider.notifier)
-            .updateRoutine(updatedRoutine);
-        await showTopMessage(context, '✅ 루틴이 수정되었습니다!');
+        // 성공한 경우에만 화면 닫기
+        if (success) {
+          print('🔄 화면 닫기 시작...');
+          context.router.pop();
+          print('✅ 화면 닫기 완료');
+        } else {
+          print('❌ 작업이 실패하여 화면을 닫지 않습니다.');
+        }
+      } catch (e) {
+        print('💥 _saveRoutine 예외 발생: $e');
+        await showTopMessage(context, '❌ 예상치 못한 오류가 발생했습니다: $e');
       }
-
-      context.router.pop();
     }
   }
 }

@@ -34,6 +34,8 @@ mixin _$Routine {
   String? get category => throw _privateConstructorUsedError;
   Priority get priority => throw _privateConstructorUsedError;
   DateTime? get completedAt => throw _privateConstructorUsedError;
+  List<DateTime> get completionHistory =>
+      throw _privateConstructorUsedError; // 완료 이력 배열 추가
   RoutineType get routineType => throw _privateConstructorUsedError; // 루틴 타입 추가
   String? get groupId => throw _privateConstructorUsedError; // 3일 루틴 그룹 식별자
   int? get dayNumber => throw _privateConstructorUsedError;
@@ -67,6 +69,7 @@ abstract class $RoutineCopyWith<$Res> {
       String? category,
       Priority priority,
       DateTime? completedAt,
+      List<DateTime> completionHistory,
       RoutineType routineType,
       String? groupId,
       int? dayNumber});
@@ -101,6 +104,7 @@ class _$RoutineCopyWithImpl<$Res, $Val extends Routine>
     Object? category = freezed,
     Object? priority = null,
     Object? completedAt = freezed,
+    Object? completionHistory = null,
     Object? routineType = null,
     Object? groupId = freezed,
     Object? dayNumber = freezed,
@@ -162,6 +166,10 @@ class _$RoutineCopyWithImpl<$Res, $Val extends Routine>
           ? _value.completedAt
           : completedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      completionHistory: null == completionHistory
+          ? _value.completionHistory
+          : completionHistory // ignore: cast_nullable_to_non_nullable
+              as List<DateTime>,
       routineType: null == routineType
           ? _value.routineType
           : routineType // ignore: cast_nullable_to_non_nullable
@@ -200,6 +208,7 @@ abstract class _$$RoutineImplCopyWith<$Res> implements $RoutineCopyWith<$Res> {
       String? category,
       Priority priority,
       DateTime? completedAt,
+      List<DateTime> completionHistory,
       RoutineType routineType,
       String? groupId,
       int? dayNumber});
@@ -232,6 +241,7 @@ class __$$RoutineImplCopyWithImpl<$Res>
     Object? category = freezed,
     Object? priority = null,
     Object? completedAt = freezed,
+    Object? completionHistory = null,
     Object? routineType = null,
     Object? groupId = freezed,
     Object? dayNumber = freezed,
@@ -293,6 +303,10 @@ class __$$RoutineImplCopyWithImpl<$Res>
           ? _value.completedAt
           : completedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      completionHistory: null == completionHistory
+          ? _value._completionHistory
+          : completionHistory // ignore: cast_nullable_to_non_nullable
+              as List<DateTime>,
       routineType: null == routineType
           ? _value.routineType
           : routineType // ignore: cast_nullable_to_non_nullable
@@ -327,10 +341,12 @@ class _$RoutineImpl extends _Routine {
       this.category,
       this.priority = Priority.medium,
       this.completedAt,
+      final List<DateTime> completionHistory = const [],
       this.routineType = RoutineType.daily,
       this.groupId,
       this.dayNumber})
       : _tags = tags,
+        _completionHistory = completionHistory,
         super._();
 
   factory _$RoutineImpl.fromJson(Map<String, dynamic> json) =>
@@ -371,6 +387,17 @@ class _$RoutineImpl extends _Routine {
   final Priority priority;
   @override
   final DateTime? completedAt;
+  final List<DateTime> _completionHistory;
+  @override
+  @JsonKey()
+  List<DateTime> get completionHistory {
+    if (_completionHistory is EqualUnmodifiableListView)
+      return _completionHistory;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_completionHistory);
+  }
+
+// 완료 이력 배열 추가
   @override
   @JsonKey()
   final RoutineType routineType;
@@ -383,7 +410,7 @@ class _$RoutineImpl extends _Routine {
 
   @override
   String toString() {
-    return 'Routine(id: $id, title: $title, memo: $memo, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, tags: $tags, targetCompletionCount: $targetCompletionCount, currentCompletionCount: $currentCompletionCount, startDate: $startDate, endDate: $endDate, category: $category, priority: $priority, completedAt: $completedAt, routineType: $routineType, groupId: $groupId, dayNumber: $dayNumber)';
+    return 'Routine(id: $id, title: $title, memo: $memo, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, tags: $tags, targetCompletionCount: $targetCompletionCount, currentCompletionCount: $currentCompletionCount, startDate: $startDate, endDate: $endDate, category: $category, priority: $priority, completedAt: $completedAt, completionHistory: $completionHistory, routineType: $routineType, groupId: $groupId, dayNumber: $dayNumber)';
   }
 
   @override
@@ -414,6 +441,8 @@ class _$RoutineImpl extends _Routine {
                 other.priority == priority) &&
             (identical(other.completedAt, completedAt) ||
                 other.completedAt == completedAt) &&
+            const DeepCollectionEquality()
+                .equals(other._completionHistory, _completionHistory) &&
             (identical(other.routineType, routineType) ||
                 other.routineType == routineType) &&
             (identical(other.groupId, groupId) || other.groupId == groupId) &&
@@ -439,6 +468,7 @@ class _$RoutineImpl extends _Routine {
       category,
       priority,
       completedAt,
+      const DeepCollectionEquality().hash(_completionHistory),
       routineType,
       groupId,
       dayNumber);
@@ -475,6 +505,7 @@ abstract class _Routine extends Routine {
       final String? category,
       final Priority priority,
       final DateTime? completedAt,
+      final List<DateTime> completionHistory,
       final RoutineType routineType,
       final String? groupId,
       final int? dayNumber}) = _$RoutineImpl;
@@ -510,6 +541,8 @@ abstract class _Routine extends Routine {
   Priority get priority;
   @override
   DateTime? get completedAt;
+  @override
+  List<DateTime> get completionHistory; // 완료 이력 배열 추가
   @override
   RoutineType get routineType; // 루틴 타입 추가
   @override

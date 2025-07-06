@@ -37,6 +37,7 @@ class Routine with _$Routine {
     String? category,
     @Default(Priority.medium) Priority priority,
     DateTime? completedAt,
+    @Default([]) List<DateTime> completionHistory, // 완료 이력 배열 추가
     @Default(RoutineType.daily) RoutineType routineType, // 루틴 타입 추가
     String? groupId, // 3일 루틴 그룹 식별자
     int? dayNumber, // 3일 루틴의 일차 (1, 2, 3)
@@ -198,8 +199,71 @@ class Routine with _$Routine {
 
   // 오늘 완료되었는지 확인하는 getter
   bool get isCompletedToday {
-    if (completedAt == null) return false;
-    return isSameDay(completedAt!, DateTime.now());
+    final today = DateTime.now();
+    return completionHistory.any((date) => isSameDay(date, today));
+  }
+
+  // 특정 날짜에 완료되었는지 확인
+  bool isCompletedOnDate(DateTime date) {
+    return completionHistory
+        .any((completedDate) => isSameDay(completedDate, date));
+  }
+
+  // 완료된 총 일수
+  int get totalCompletedDays => completionHistory.length;
+
+  // 연속 완료 일수 (현재 날짜부터 역순으로)
+  int get currentStreak {
+    if (completionHistory.isEmpty) return 0;
+
+    final sortedDates = List<DateTime>.from(completionHistory)
+      ..sort((a, b) => b.compareTo(a)); // 최신 날짜부터 정렬
+
+    int streak = 0;
+    final today = DateTime.now();
+    DateTime checkDate = DateTime(today.year, today.month, today.day);
+
+    for (int i = 0; i < sortedDates.length; i++) {
+      final completedDate = DateTime(
+        sortedDates[i].year,
+        sortedDates[i].month,
+        sortedDates[i].day,
+      );
+
+      if (isSameDay(completedDate, checkDate)) {
+        streak++;
+        checkDate = checkDate.subtract(const Duration(days: 1));
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
+  // 최근 7일간 완료 횟수
+  int get weeklyCompletionCount {
+    final now = DateTime.now();
+    final weekAgo = now.subtract(const Duration(days: 7));
+
+    return completionHistory
+        .where((date) =>
+            date.isAfter(weekAgo) &&
+            date.isBefore(now.add(const Duration(days: 1))))
+        .length;
+  }
+
+  // 이번 달 완료 횟수
+  int get monthlyCompletionCount {
+    final now = DateTime.now();
+    final firstDayOfMonth = DateTime(now.year, now.month, 1);
+    final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
+
+    return completionHistory
+        .where((date) =>
+            date.isAfter(firstDayOfMonth.subtract(const Duration(days: 1))) &&
+            date.isBefore(lastDayOfMonth.add(const Duration(days: 1))))
+        .length;
   }
 
   // 3일 루틴인지 확인하는 getter
@@ -228,19 +292,45 @@ class Routine with _$Routine {
   }
 
   // 루틴 완료 메서드
-  Routine markAsCompleted() {
+  Routine markAsCompleted([DateTime? date]) {
+    final completionDate = date ?? DateTime.now();
+    final dateOnly =
+        DateTime(completionDate.year, completionDate.month, completionDate.day);
+
+    // 이미 해당 날짜에 완료되어 있으면 그대로 반환
+    if (isCompletedOnDate(dateOnly)) return this;
+
+    final updatedHistory = List<DateTime>.from(completionHistory)
+      ..add(dateOnly);
+
     return copyWith(
-      completedAt: DateTime.now(),
+      completedAt: completionDate,
+      completionHistory: updatedHistory,
       updatedAt: DateTime.now(),
     );
   }
 
   // 루틴 미완료 메서드
-  Routine markAsIncomplete() {
+  Routine markAsIncomplete([DateTime? date]) {
+    final targetDate = date ?? DateTime.now();
+    final dateOnly =
+        DateTime(targetDate.year, targetDate.month, targetDate.day);
+
+    // 해당 날짜의 완료 기록 제거
+    final updatedHistory = completionHistory
+        .where((completedDate) => !isSameDay(completedDate, dateOnly))
+        .toList();
+
     return copyWith(
-      completedAt: null,
+      completedAt: updatedHistory.isEmpty ? null : completionHistory.last,
+      completionHistory: updatedHistory,
       updatedAt: DateTime.now(),
     );
+  }
+
+  // 오늘 완료 상태 토글
+  Routine toggleTodayCompletion() {
+    return isCompletedToday ? markAsIncomplete() : markAsCompleted();
   }
 
   Routine incrementCompletion() {

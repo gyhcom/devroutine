@@ -27,6 +27,10 @@ _$RoutineImpl _$$RoutineImplFromJson(Map<String, dynamic> json) =>
       completedAt: json['completedAt'] == null
           ? null
           : DateTime.parse(json['completedAt'] as String),
+      completionHistory: (json['completionHistory'] as List<dynamic>?)
+              ?.map((e) => DateTime.parse(e as String))
+              .toList() ??
+          const [],
       routineType:
           $enumDecodeNullable(_$RoutineTypeEnumMap, json['routineType']) ??
               RoutineType.daily,
@@ -50,6 +54,8 @@ Map<String, dynamic> _$$RoutineImplToJson(_$RoutineImpl instance) =>
       'category': instance.category,
       'priority': _$PriorityEnumMap[instance.priority]!,
       'completedAt': instance.completedAt?.toIso8601String(),
+      'completionHistory':
+          instance.completionHistory.map((e) => e.toIso8601String()).toList(),
       'routineType': _$RoutineTypeEnumMap[instance.routineType]!,
       'groupId': instance.groupId,
       'dayNumber': instance.dayNumber,
