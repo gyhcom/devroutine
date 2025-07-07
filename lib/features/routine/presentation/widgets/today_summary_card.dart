@@ -318,10 +318,6 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
         _buildPriorityBreakdown(todayAnalysis),
         const SizedBox(height: SummaryCardConstants.mediumSpacing),
         _buildProgressSection(progressData),
-        if (progressData.isComplete) ...[
-          const SizedBox(height: SummaryCardConstants.smallSpacing),
-          _buildCelebrationMessage(),
-        ],
       ],
     );
   }
@@ -447,8 +443,8 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
                 decoration: SummaryCardStyles.celebrationDecoration.copyWith(
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.green
-                          .withValues(alpha: 0.2 * _celebrationFadeAnimation.value),
+                      color: Colors.green.withValues(
+                          alpha: 0.2 * _celebrationFadeAnimation.value),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),

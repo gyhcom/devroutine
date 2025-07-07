@@ -286,25 +286,24 @@ class RoutineNotifier extends _$RoutineNotifier {
 
           // print('✅ UI 상태 업데이트 완료 - ${routine.title}');
 
-          // 3일 루틴 완료 체크
-          if (routine.groupId != null) {
-            final isGroupCompleted =
-                isThreeDayRoutineCompleted(routine.groupId!, updatedRoutines);
-            if (isGroupCompleted) {
-              // 🎉 3일 루틴 완료 축하 메시지
-              Future.microtask(() {
-                // 여기서 특별한 축하 효과 실행
-                _showThreeDayCompletionCelebration();
-              });
-            }
-          }
-
           // 백엔드 업데이트
           // print('💾 데이터베이스 업데이트 시작 - ${routine.title}');
           final result = await _updateRoutineUseCase.execute(updatedRoutine);
 
           if (result case Success()) {
             // print('✅ 데이터베이스 업데이트 성공 - ${routine.title}');
+
+            // 3일 루틴 완료 체크 (데이터베이스 업데이트 성공 후에만)
+            if (routine.groupId != null) {
+              final isGroupCompleted =
+                  isThreeDayRoutineCompleted(routine.groupId!, updatedRoutines);
+              if (isGroupCompleted) {
+                // 🎉 3일 루틴 완료 축하 메시지 (안전하게 지연 실행)
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  _showThreeDayCompletionCelebration(routine.groupId!);
+                });
+              }
+            }
           } else if (result case ResultFailure(failure: final failure)) {
             // print('❌ 데이터베이스 업데이트 실패 - ${routine.title}: ${failure.message}');
             // 실패 시 이전 상태로 복원
@@ -328,9 +327,32 @@ class RoutineNotifier extends _$RoutineNotifier {
     );
   }
 
-  void _showThreeDayCompletionCelebration() {
+  void _showThreeDayCompletionCelebration(String groupId) {
     // 3일 루틴 완료 시 특별한 효과
-    // 예: 애니메이션, 사운드, 특별 메시지 등
+    // 상태를 통해 축하 메시지 표시 (UI에서 감지하여 처리)
+    state.whenOrNull(
+      loaded: (routines) {
+        // 완료된 그룹의 첫 번째 루틴 제목 가져오기
+        final groupRoutines =
+            routines.where((r) => r.groupId == groupId).toList();
+        if (groupRoutines.isNotEmpty) {
+          final baseTitle =
+              groupRoutines.first.title.replaceAll(RegExp(r'\s*\(\d+일차\)'), '');
+
+          // 임시로 축하 메시지를 에러 상태로 표시 (UI에서 감지)
+          // 실제로는 별도의 상태나 이벤트 시스템을 사용하는 것이 좋음
+          final celebrationMessage = '🎉 "$baseTitle" 3일 챌린지 완료! 정말 대단해요! 🏆';
+
+          // 축하 메시지를 임시 에러 상태로 표시하고 곧바로 복원
+          Future.microtask(() {
+            state = RoutineState.error(celebrationMessage);
+            Future.delayed(const Duration(seconds: 3), () {
+              state = RoutineState.loaded(routines);
+            });
+          });
+        }
+      },
+    );
   }
 
   // 루틴 미완료 메서드

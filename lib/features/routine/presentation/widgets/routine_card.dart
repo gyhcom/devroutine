@@ -764,90 +764,25 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
         ),
       );
     } else {
-      // 3일 루틴 완료 피드백
-      final groupRoutines = widget.groupRoutines ?? [];
-      final completedCount =
-          groupRoutines.where((r) => r.isCompletedToday == true).length +
-              1; // +1 for current completion
-      final totalCount = groupRoutines.length;
-
-      if (completedCount == totalCount) {
-        // 3일 챌린지 완료!
-        _showChallengeCompletionDialog();
-      } else {
-        // 일차 완료
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.local_fire_department, color: Colors.white),
-                const SizedBox(width: 8),
-                Text('Day ${widget.routine.dayNumber} 완료! 🔥 계속 화이팅!'),
-              ],
-            ),
-            backgroundColor: Colors.orange.shade600,
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
+      // 3일 루틴 완료 피드백 (Provider에서 처리하므로 여기서는 간단한 일차 완료 메시지만)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.local_fire_department, color: Colors.white),
+              const SizedBox(width: 8),
+              Text('Day ${widget.routine.dayNumber} 완료! 🔥 계속 화이팅!'),
+            ],
           ),
-        );
-      }
+          backgroundColor: Colors.orange.shade600,
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
     }
-  }
-
-  void _showChallengeCompletionDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Column(
-          children: [
-            Icon(
-              Icons.emoji_events,
-              color: Colors.amber.shade600,
-              size: 48,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '🎉 미션 성공!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              '"${widget.routine.title}"',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '3일 챌린지를 완주하셨습니다!\n정말 대단해요! 🏆',
-              style: TextStyle(fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            child: const Text('계속하기'),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildCompactProgressIndicator(List<Routine> groupRoutines) {

@@ -225,36 +225,71 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         return routineState.when(
           initial: () => const Center(child: CircularProgressIndicator()),
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (message) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 64,
-                  color: Colors.red,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '오류가 발생했습니다',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey.shade800,
+          error: (message) {
+            // 축하 메시지인지 확인
+            final isCelebrationMessage =
+                message.startsWith('🎉') && message.contains('3일 챌린지 완료');
+
+            if (isCelebrationMessage) {
+              // 축하 메시지를 스낵바로 안전하게 표시
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.emoji_events, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(message)),
+                        ],
+                      ),
+                      backgroundColor: Colors.amber.shade600,
+                      duration: const Duration(seconds: 4),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  );
+                }
+              });
+
+              // 로딩 상태로 표시하여 곧바로 정상 상태로 복원되도록 함
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            // 일반 에러 메시지 표시
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.red,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  message,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
+                  const SizedBox(height: 16),
+                  Text(
+                    '오류가 발생했습니다',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey.shade800,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
+                  const SizedBox(height: 8),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          },
           loaded: (routines) {
             // 오늘의 루틴 필터링
             final notifier = ref.read(routineNotifierProvider.notifier);
@@ -311,20 +346,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           (routine) => _isRoutineCompletedForToday(routine));
 
               return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // 완료 상태에 따른 아이콘 선택
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 64,
+                        height: 64,
                         decoration: BoxDecoration(
                           color: hasCompletedRoutines
                               ? Colors.green.shade50
                               : Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(40),
+                          borderRadius: BorderRadius.circular(32),
                           border: Border.all(
                             color: hasCompletedRoutines
                                 ? Colors.green.shade200
@@ -338,52 +374,52 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               : (isCompletedFilter
                                   ? Icons.task_alt
                                   : Icons.add_task),
-                          size: 40,
+                          size: 32,
                           color: hasCompletedRoutines
                               ? Colors.green.shade600
                               : Colors.grey.shade400,
                         ),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
                       Text(
                         _getEmptyStateTitle(
                             hasCompletedRoutines, isCompletedFilter),
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.w700,
                           color: hasCompletedRoutines
                               ? Colors.green.shade700
                               : Colors.grey.shade700,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       Text(
                         _getEmptyStateSubtitle(
                             hasCompletedRoutines, isCompletedFilter),
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           color: hasCompletedRoutines
                               ? Colors.green.shade600
                               : Colors.grey.shade600,
                         ),
                       ),
                       if (hasCompletedRoutines) ...[
-                        const SizedBox(height: 24),
-                        // 완료 축하 애니메이션 효과
+                        const SizedBox(height: 16),
+                        // 완료 축하 애니메이션 효과 (크기 축소)
                         TweenAnimationBuilder<double>(
                           tween: Tween(begin: 0.0, end: 1.0),
-                          duration: const Duration(milliseconds: 1500),
+                          duration: const Duration(milliseconds: 1200),
                           builder: (context, value, child) {
                             return Transform.scale(
-                              scale: 0.8 + (0.2 * value),
+                              scale: 0.9 + (0.1 * value),
                               child: Opacity(
                                 opacity: value,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 12,
+                                    horizontal: 20,
+                                    vertical: 8,
                                   ),
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
@@ -392,12 +428,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                         Colors.green.shade600,
                                       ],
                                     ),
-                                    borderRadius: BorderRadius.circular(25),
+                                    borderRadius: BorderRadius.circular(20),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.green.shade200,
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
                                       ),
                                     ],
                                   ),
@@ -405,7 +441,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     '🏆 완벽해요!',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 16,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
