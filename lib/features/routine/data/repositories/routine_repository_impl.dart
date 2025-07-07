@@ -20,9 +20,9 @@ class RoutineRepositoryImpl implements RoutineRepository {
       _operationCount = 0;
       try {
         await _localDataSource.backupData();
-        print('🔄 Auto backup completed');
+        // print('🔄 Auto backup completed');
       } catch (e) {
-        print('⚠️ Auto backup failed: $e');
+        // print('⚠️ Auto backup failed: $e');
       }
     }
   }

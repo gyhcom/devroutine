@@ -405,7 +405,7 @@ class RoutineNotifier extends _$RoutineNotifier {
         loading: () async {
           // print('⏳ 로딩 중... 잠시 대기 후 재시도');
           await Future.delayed(const Duration(milliseconds: 500));
-          return false; // 재귀 호출
+          return await createRoutine(routine); // 재귀 호출
         },
         loaded: (routines) async {
           // print('✅ 상태가 loaded임 - 루틴 개수: ${routines.length}');
@@ -415,7 +415,7 @@ class RoutineNotifier extends _$RoutineNotifier {
           // print('❌ 오류 상태에서 루틴 생성 시도: $message');
           // 오류 상태에서는 먼저 데이터를 다시 로드
           await _loadRoutines();
-          return false; // 재귀 호출
+          return await createRoutine(routine); // 재귀 호출
         },
       );
     } catch (e) {
@@ -501,7 +501,7 @@ class RoutineNotifier extends _$RoutineNotifier {
         loading: () async {
           // print('⏳ 로딩 중... 잠시 대기 후 재시도');
           await Future.delayed(const Duration(milliseconds: 500));
-          return false; // 재귀 호출
+          return await createThreeDayRoutines(routines); // 재귀 호출
         },
         loaded: (existingRoutines) async {
           // print('✅ 상태가 loaded임 - 기존 루틴 개수: ${existingRoutines.length}');
@@ -512,7 +512,7 @@ class RoutineNotifier extends _$RoutineNotifier {
           // print('❌ 오류 상태에서 3일 루틴 생성 시도: $message');
           // 오류 상태에서는 먼저 데이터를 다시 로드
           await _loadRoutines();
-          return false; // 재귀 호출
+          return await createThreeDayRoutines(routines); // 재귀 호출
         },
       );
     } catch (e) {

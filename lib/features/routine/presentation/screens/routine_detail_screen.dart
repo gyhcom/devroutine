@@ -216,7 +216,7 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
               end: Alignment.bottomRight,
               colors: [
                 priorityColor,
-                priorityColor.withOpacity(0.8),
+                priorityColor.withValues(alpha: 0.8),
               ],
             ),
           ),
@@ -272,9 +272,9 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -304,9 +304,9 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -613,7 +613,7 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -743,11 +743,11 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
         content: Text('정말로 "${routine.title}" 루틴을 삭제하시겠습니까?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(context).maybePop(false),
             child: const Text('취소'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(context).maybePop(true),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red,
             ),
@@ -819,18 +819,18 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop('cancel'),
+            onPressed: () => Navigator.of(context).maybePop('cancel'),
             child: const Text('취소'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop('single'),
+            onPressed: () => Navigator.of(context).maybePop('single'),
             style: TextButton.styleFrom(
               foregroundColor: Colors.orange.shade600,
             ),
             child: const Text('이 루틴만 삭제'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).pop('group'),
+            onPressed: () => Navigator.of(context).maybePop('group'),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red,
             ),

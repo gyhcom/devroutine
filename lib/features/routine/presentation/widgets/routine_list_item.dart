@@ -24,13 +24,13 @@ class RoutineListItemStyles {
 
   static TextStyle memoStyle(BuildContext context) => TextStyle(
         fontSize: 13, // bodyMedium보다 작게
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         height: 1.3,
       );
 
   static TextStyle progressStyle(BuildContext context) => TextStyle(
         fontSize: 12, // bodySmall보다 작게
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
         fontWeight: FontWeight.w500,
       );
 
@@ -69,14 +69,14 @@ class RoutineListItem extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           border: Border.all(
-            color: borderColor.withOpacity(0.6), // 투명도 추가로 부드럽게
+            color: borderColor.withValues(alpha: 0.6), // 투명도 추가로 부드럽게
             width: RoutineListItemConstants.borderWidth,
           ),
           borderRadius:
               BorderRadius.circular(RoutineListItemConstants.cardBorderRadius),
           boxShadow: [
             BoxShadow(
-              color: theme.shadowColor.withOpacity(0.08), // 미세한 그림자
+              color: theme.shadowColor.withValues(alpha: 0.08), // 미세한 그림자
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -151,9 +151,9 @@ class RoutineListItem extends StatelessWidget {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: color.withOpacity(0.3), width: 1),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
         ),
         child: Icon(
           icon,
@@ -250,7 +250,7 @@ class RoutineListItem extends StatelessWidget {
         vertical: 6,
       ),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+        color: Theme.of(context).colorScheme.surfaceVariant.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
@@ -291,7 +291,7 @@ class RoutineListItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(3),
           child: LinearProgressIndicator(
             value: progress,
-            backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+            backgroundColor: theme.colorScheme.surfaceVariant.withValues(alpha: 0.3),
             valueColor: AlwaysStoppedAnimation<Color>(
               progress >= 1.0
                   ? Colors.green.shade600

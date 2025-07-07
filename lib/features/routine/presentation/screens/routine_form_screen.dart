@@ -251,7 +251,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.white,
+          color: isSelected ? color.withValues(alpha: 0.1) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? color : Colors.grey.shade300,
@@ -484,7 +484,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
           // 새 루틴 생성
           if (_routineType == RoutineType.threeDay) {
             // 3일 루틴: 3개의 루틴 생성
-            print('🚀 3일 루틴 생성 시작...');
+            // print('🚀 3일 루틴 생성 시작...');
             final today = DateTime(now.year, now.month, now.day);
 
             final threeDayRoutines = Routine.createThreeDayRoutines(
@@ -496,11 +496,11 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
               priority: _priority,
             );
 
-            print('📝 생성할 3일 루틴 개수: ${threeDayRoutines.length}');
+            // print('📝 생성할 3일 루틴 개수: ${threeDayRoutines.length}');
             success = await ref
                 .read(routineNotifierProvider.notifier)
                 .createThreeDayRoutines(threeDayRoutines);
-            print('✅ 3일 루틴 생성 결과: $success');
+            // print('✅ 3일 루틴 생성 결과: $success');
 
             if (success) {
               await showTopMessage(context, '🚀 3일 챌린지가 시작되었습니다! 함께 완주해봐요!');
@@ -509,7 +509,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
             }
           } else {
             // 일일 루틴: 1개의 루틴 생성
-            print('📅 일일 루틴 생성 시작...');
+            // print('📅 일일 루틴 생성 시작...');
             final routine = Routine.create(
               title: _titleController.text.trim(),
               memo: _memoController.text.trim(),
@@ -524,7 +524,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
             success = await ref
                 .read(routineNotifierProvider.notifier)
                 .createRoutine(routine);
-            print('✅ 일일 루틴 생성 결과: $success');
+            // print('✅ 일일 루틴 생성 결과: $success');
 
             if (success) {
               await showTopMessage(context, '✅ 루틴이 생성되었습니다!');
@@ -534,7 +534,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
           }
         } else {
           // 기존 루틴 수정
-          print('✏️ 루틴 수정 시작...');
+          // print('✏️ 루틴 수정 시작...');
           final updatedRoutine = widget.routine!.copyWith(
             title: _titleController.text.trim(),
             memo: _memoController.text.trim(),
@@ -545,7 +545,7 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
           success = await ref
               .read(routineNotifierProvider.notifier)
               .updateRoutine(updatedRoutine);
-          print('✅ 루틴 수정 결과: $success');
+          // print('✅ 루틴 수정 결과: $success');
 
           if (success) {
             await showTopMessage(context, '✅ 루틴이 수정되었습니다!');
@@ -556,14 +556,14 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
 
         // 성공한 경우에만 화면 닫기
         if (success) {
-          print('🔄 화면 닫기 시작...');
+          // print('🔄 화면 닫기 시작...');
           context.router.pop();
-          print('✅ 화면 닫기 완료');
+          // print('✅ 화면 닫기 완료');
         } else {
-          print('❌ 작업이 실패하여 화면을 닫지 않습니다.');
+          // print('❌ 작업이 실패하여 화면을 닫지 않습니다.');
         }
       } catch (e) {
-        print('💥 _saveRoutine 예외 발생: $e');
+        // print('💥 _saveRoutine 예외 발생: $e');
         await showTopMessage(context, '❌ 예상치 못한 오류가 발생했습니다: $e');
       }
     }

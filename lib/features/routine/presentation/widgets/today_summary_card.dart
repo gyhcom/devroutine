@@ -448,7 +448,7 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
                   boxShadow: [
                     BoxShadow(
                       color: Colors.green
-                          .withOpacity(0.2 * _celebrationFadeAnimation.value),
+                          .withValues(alpha: 0.2 * _celebrationFadeAnimation.value),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),

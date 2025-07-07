@@ -37,13 +37,13 @@ class RoutineListScreenStyles {
 
   static TextStyle emptySubtitleStyle(BuildContext context) => TextStyle(
         fontSize: 14,
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
         height: 1.4,
       );
 
   static TextStyle loadingTextStyle(BuildContext context) => TextStyle(
         fontSize: 14,
-        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
       );
 
   static TextStyle errorTextStyle(BuildContext context) => TextStyle(
@@ -277,7 +277,7 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
           color: isSelected ? color : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? color : color.withOpacity(0.3),
+            color: isSelected ? color : color.withValues(alpha: 0.3),
             width: 1.5,
           ),
         ),
@@ -319,7 +319,7 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
           color: isSelected ? color : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isSelected ? color : color.withOpacity(0.3),
+            color: isSelected ? color : color.withValues(alpha: 0.3),
             width: 1.5,
           ),
         ),
@@ -498,7 +498,7 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
                 color: Theme.of(context)
                     .colorScheme
                     .primaryContainer
-                    .withOpacity(0.3),
+                    .withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(48),
               ),
               child: Icon(

@@ -34,7 +34,7 @@ class RoutineCardStyles {
         ),
         boxShadow: [
           BoxShadow(
-            color: getPriorityBorderColor(priority).withOpacity(0.2),
+            color: getPriorityBorderColor(priority).withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -47,12 +47,12 @@ class RoutineCardStyles {
       borderRadius:
           BorderRadius.circular(RoutineCardConstants.cardBorderRadius),
       border: Border.all(
-        color: borderColor.withOpacity(0.3),
+        color: borderColor.withValues(alpha: 0.3),
         width: 1,
       ),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withValues(alpha: 0.05),
           blurRadius: 8,
           offset: const Offset(0, 2),
         ),
@@ -140,6 +140,7 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
   // 완료 상태 추적
   bool _isCompleting = false;
   bool _shouldHide = false;
+  String? _completedRoutineId; // 완료된 루틴 ID 추적
 
   @override
   void initState() {
@@ -207,8 +208,16 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
   Widget build(BuildContext context) {
     final isThreeDayRoutine = widget.routine.isThreeDayRoutine;
 
-    // 완료 애니메이션이 끝나면 카드를 숨김
-    if (_shouldHide) {
+    // 🔥 수정: 루틴 완료 상태와 애니메이션 상태를 함께 확인
+    final isCompletedForToday = widget.routine.isThreeDayRoutine
+        ? widget.routine.isCompletedOnDate(DateTime.now())
+        : widget.routine.isCompletedToday;
+
+    // 완료된 루틴이고 애니메이션이 끝났다면 카드를 숨김
+    if (_shouldHide &&
+        isCompletedForToday &&
+        _completedRoutineId == widget.routine.id) {
+      // Card hidden for routine: ${widget.routine.title} (completed: $isCompletedForToday, shouldHide: $_shouldHide, completedId: $_completedRoutineId)
       return const SizedBox.shrink();
     }
 
@@ -360,7 +369,7 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -650,104 +659,6 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
     );
   }
 
-  // 전체 진행 상황 미리보기 위젯
-  Widget _buildProgressPreview(List<Routine> groupRoutines) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: groupRoutines.asMap().entries.map((entry) {
-          final index = entry.key;
-          final routine = entry.value;
-          final status = _getRoutineStatus(routine);
-
-          return GestureDetector(
-            onTap:
-                status.isToday ? () => _navigateToRoutineDetail(routine) : null,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              decoration: BoxDecoration(
-                color: status.isToday
-                    ? Colors.blue.shade100
-                    : status.isCompleted
-                        ? Colors.green.shade100
-                        : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(4),
-                border: Border.all(
-                  color: status.isToday
-                      ? Colors.blue.shade300
-                      : status.isCompleted
-                          ? Colors.green.shade300
-                          : Colors.grey.shade300,
-                  width: 1,
-                ),
-              ),
-              child: Column(
-                children: [
-                  // 체크박스
-                  Icon(
-                    status.icon,
-                    color: status.color,
-                    size: 14,
-                  ),
-                  const SizedBox(height: 1),
-                  // 일차 텍스트
-                  Text(
-                    '${index + 1}일차',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w600,
-                      color: status.isToday
-                          ? Colors.blue.shade700
-                          : status.isCompleted
-                              ? Colors.green.shade700
-                              : Colors.grey.shade600,
-                    ),
-                  ),
-                  // 날짜 표시
-                  Text(
-                    _getDayLabel(routine.startDate),
-                    style: TextStyle(
-                      fontSize: 7,
-                      color: status.isToday
-                          ? Colors.blue.shade500
-                          : Colors.grey.shade500,
-                    ),
-                  ),
-                  // 오늘 표시 (오늘의 할일인 경우)
-                  if (status.isToday) ...[
-                    const SizedBox(height: 1),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 3, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade600,
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: Text(
-                        '오늘',
-                        style: TextStyle(
-                          fontSize: 5,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
   // 날짜 라벨 생성 (오늘, 내일, 모레)
   String _getDayLabel(DateTime date) {
     final now = DateTime.now();
@@ -780,36 +691,21 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
     ref.read(routineNotifierProvider.notifier).refreshRoutines();
   }
 
-  String _getPriorityLabel(Priority priority) {
-    switch (priority) {
-      case Priority.high:
-        return 'HIGH';
-      case Priority.medium:
-        return 'MID';
-      case Priority.low:
-        return 'LOW';
-    }
-  }
-
-  Color _getPriorityColor(Priority priority) {
-    switch (priority) {
-      case Priority.high:
-        return Colors.red.shade400;
-      case Priority.medium:
-        return Colors.orange.shade400;
-      case Priority.low:
-        return Colors.green.shade400;
-    }
-  }
-
   void _toggleCompletion({bool showFeedback = false}) {
     final wasCompleted = widget.routine.isCompletedToday;
 
+    // _toggleCompletion called for routine: ${widget.routine.title} (ID: ${widget.routine.id})
+    // print('📊 wasCompleted: $wasCompleted, _isCompleting: $_isCompleting');
+
     // 완료 중이면 중복 실행 방지
-    if (_isCompleting) return;
+    if (_isCompleting) {
+      // print('⚠️ Already completing, skipping...');
+      return;
+    }
 
     if (!wasCompleted) {
       // 완료 처리
+      // print('✅ Starting completion process for: ${widget.routine.title}');
       _isCompleting = true;
 
       // 즉시 완료 상태로 변경
@@ -818,9 +714,12 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
           .toggleRoutineCompletion(widget.routine.id);
 
       // 완료 애니메이션 실행
+      // print('🎬 Starting completion animation for: ${widget.routine.title}');
+      _completedRoutineId = widget.routine.id; // 완료된 루틴 ID 저장
       _completionAnimationController.forward().then((_) {
         // 애니메이션 완료 후 카드 숨김
-        if (mounted) {
+        if (mounted && _completedRoutineId == widget.routine.id) {
+          // print('🙈 Hiding card after animation: ${widget.routine.title}');
           setState(() {
             _shouldHide = true;
           });
@@ -833,6 +732,7 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
       }
     } else {
       // 완료 취소 (일반적인 토글)
+      // print('🔄 Toggling completion for: ${widget.routine.title}');
       _animationController.forward().then((_) {
         _animationController.reverse();
       });
@@ -942,7 +842,7 @@ class _RoutineCardState extends ConsumerState<RoutineCard>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).maybePop(),
             child: const Text('계속하기'),
           ),
         ],

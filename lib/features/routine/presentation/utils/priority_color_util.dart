@@ -10,8 +10,6 @@ Color getPriorityBorderColor(Priority priority) {
       return const Color(0xFFFFB347); // 부드러운 주황색
     case Priority.low:
       return const Color(0xFF4ECDC4); // 부드러운 청록색
-    default:
-      return Colors.grey.shade400;
   }
 }
 
@@ -24,8 +22,6 @@ Color getPriorityBackgroundColor(Priority priority) {
       return const Color(0xFFFFF9F0); // 연한 주황색 배경
     case Priority.low:
       return const Color(0xFFF0FDFC); // 연한 청록색 배경
-    default:
-      return Colors.grey.shade50;
   }
 }
 
@@ -38,8 +34,6 @@ IconData getPriorityIcon(Priority priority) {
       return Icons.schedule_rounded;
     case Priority.low:
       return Icons.low_priority_rounded;
-    default:
-      return Icons.radio_button_unchecked;
   }
 }
 
@@ -64,12 +58,6 @@ LinearGradient getPriorityGradient(Priority priority) {
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       );
-    default:
-      return LinearGradient(
-        colors: [Colors.grey.shade300, Colors.grey.shade400],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      );
   }
 }
 
@@ -82,8 +70,6 @@ Color getPriorityTextColor(Priority priority) {
       return const Color(0xFFD69E2E);
     case Priority.low:
       return const Color(0xFF319795);
-    default:
-      return Colors.grey.shade700;
   }
 }
 
@@ -96,7 +82,5 @@ String getPriorityLabel(Priority priority) {
       return '중요';
     case Priority.low:
       return '여유';
-    default:
-      return '일반';
   }
 }

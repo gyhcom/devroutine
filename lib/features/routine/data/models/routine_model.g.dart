@@ -31,16 +31,17 @@ class RoutineModelAdapter extends TypeAdapter<RoutineModel> {
       category: fields[12] as String?,
       priority: fields[13] as Priority,
       completedAt: fields[14] as DateTime?,
-      routineType: fields[15] as RoutineType,
-      groupId: fields[16] as String?,
-      dayNumber: fields[17] as int?,
+      completionHistory: (fields[15] as List).cast<DateTime>(),
+      routineType: fields[16] as RoutineType,
+      groupId: fields[17] as String?,
+      dayNumber: fields[18] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, RoutineModel obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(18)
       ..writeByte(1)
       ..write(obj.id)
       ..writeByte(2)
@@ -70,10 +71,12 @@ class RoutineModelAdapter extends TypeAdapter<RoutineModel> {
       ..writeByte(14)
       ..write(obj.completedAt)
       ..writeByte(15)
-      ..write(obj.routineType)
+      ..write(obj.completionHistory)
       ..writeByte(16)
-      ..write(obj.groupId)
+      ..write(obj.routineType)
       ..writeByte(17)
+      ..write(obj.groupId)
+      ..writeByte(18)
       ..write(obj.dayNumber);
   }
 
@@ -113,6 +116,10 @@ _$RoutineModelImpl _$$RoutineModelImplFromJson(Map<String, dynamic> json) =>
       completedAt: json['completedAt'] == null
           ? null
           : DateTime.parse(json['completedAt'] as String),
+      completionHistory: (json['completionHistory'] as List<dynamic>?)
+              ?.map((e) => DateTime.parse(e as String))
+              .toList() ??
+          const [],
       routineType:
           $enumDecodeNullable(_$RoutineTypeEnumMap, json['routineType']) ??
               RoutineType.daily,
@@ -136,6 +143,8 @@ Map<String, dynamic> _$$RoutineModelImplToJson(_$RoutineModelImpl instance) =>
       'category': instance.category,
       'priority': _$PriorityEnumMap[instance.priority]!,
       'completedAt': instance.completedAt?.toIso8601String(),
+      'completionHistory':
+          instance.completionHistory.map((e) => e.toIso8601String()).toList(),
       'routineType': _$RoutineTypeEnumMap[instance.routineType]!,
       'groupId': instance.groupId,
       'dayNumber': instance.dayNumber,

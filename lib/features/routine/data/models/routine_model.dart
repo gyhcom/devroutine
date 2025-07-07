@@ -24,9 +24,10 @@ class RoutineModel with _$RoutineModel {
     @HiveField(12) String? category,
     @HiveField(13) @Default(Priority.medium) Priority priority,
     @HiveField(14) DateTime? completedAt,
-    @HiveField(15) @Default(RoutineType.daily) RoutineType routineType,
-    @HiveField(16) String? groupId,
-    @HiveField(17) int? dayNumber,
+    @HiveField(15) @Default([]) List<DateTime> completionHistory, // 완료 이력 추가
+    @HiveField(16) @Default(RoutineType.daily) RoutineType routineType,
+    @HiveField(17) String? groupId,
+    @HiveField(18) int? dayNumber,
   }) = _RoutineModel;
 
   factory RoutineModel.fromJson(Map<String, dynamic> json) =>
@@ -48,6 +49,7 @@ class RoutineModel with _$RoutineModel {
       category: routine.category,
       priority: routine.priority,
       completedAt: routine.completedAt,
+      completionHistory: routine.completionHistory, // 완료 이력 추가
       routineType: routine.routineType,
       groupId: routine.groupId,
       dayNumber: routine.dayNumber,
@@ -72,6 +74,7 @@ extension RoutineModelX on RoutineModel {
       category: category,
       priority: priority,
       completedAt: completedAt,
+      completionHistory: completionHistory, // 완료 이력 추가
       routineType: routineType,
       groupId: groupId,
       dayNumber: dayNumber,

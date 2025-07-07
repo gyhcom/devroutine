@@ -10,6 +10,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+// 대시보드 필터 타입 정의
+enum DashboardFilter {
+  all, // 전체 (완료되지 않은 것만)
+  high, // 긴급 (완료되지 않은 것만)
+  medium, // 중요 (완료되지 않은 것만)
+  low, // 여유 (완료되지 않은 것만)
+  completed, // 완료됨 (완료된 것만)
+}
+
 @RoutePage()
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -19,7 +28,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  Priority? selectedPriority; // null이면 전체 보기
+  DashboardFilter selectedFilter = DashboardFilter.all; // 기본값: 전체
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +70,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 end: Alignment.bottomRight,
                 colors: [
                   Theme.of(context).primaryColor,
-                  Theme.of(context).primaryColor.withOpacity(0.8),
+                  Theme.of(context).primaryColor.withValues(alpha: 0.8),
                 ],
               ),
             ),
@@ -90,11 +99,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 섹션 헤더
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(20, 20, 20, 12),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                   child: Text(
-                    '오늘의 루틴',
-                    style: TextStyle(
+                    selectedFilter == DashboardFilter.completed
+                        ? '완료된 루틴'
+                        : '오늘의 루틴',
+                    style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -121,42 +132,56 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   Widget _buildFilterChips() {
     return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Row(
-        children: [
-          // 전체 필터
-          _buildFilterChip(
-            label: '전체',
-            isSelected: selectedPriority == null,
-            onTap: () => setState(() => selectedPriority = null),
-            color: Colors.grey,
-          ),
-          const SizedBox(width: 8),
-          // 긴급 필터
-          _buildFilterChip(
-            label: '긴급',
-            isSelected: selectedPriority == Priority.high,
-            onTap: () => setState(() => selectedPriority = Priority.high),
-            color: getPriorityBorderColor(Priority.high),
-          ),
-          const SizedBox(width: 8),
-          // 중요 필터
-          _buildFilterChip(
-            label: '중요',
-            isSelected: selectedPriority == Priority.medium,
-            onTap: () => setState(() => selectedPriority = Priority.medium),
-            color: getPriorityBorderColor(Priority.medium),
-          ),
-          const SizedBox(width: 8),
-          // 여유 필터
-          _buildFilterChip(
-            label: '여유',
-            isSelected: selectedPriority == Priority.low,
-            onTap: () => setState(() => selectedPriority = Priority.low),
-            color: getPriorityBorderColor(Priority.low),
-          ),
-        ],
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            // 전체 필터
+            _buildFilterChip(
+              label: '전체',
+              isSelected: selectedFilter == DashboardFilter.all,
+              onTap: () => setState(() => selectedFilter = DashboardFilter.all),
+              color: Colors.grey,
+            ),
+            const SizedBox(width: 8),
+            // 긴급 필터
+            _buildFilterChip(
+              label: '긴급',
+              isSelected: selectedFilter == DashboardFilter.high,
+              onTap: () =>
+                  setState(() => selectedFilter = DashboardFilter.high),
+              color: getPriorityBorderColor(Priority.high),
+            ),
+            const SizedBox(width: 8),
+            // 중요 필터
+            _buildFilterChip(
+              label: '중요',
+              isSelected: selectedFilter == DashboardFilter.medium,
+              onTap: () =>
+                  setState(() => selectedFilter = DashboardFilter.medium),
+              color: getPriorityBorderColor(Priority.medium),
+            ),
+            const SizedBox(width: 8),
+            // 여유 필터
+            _buildFilterChip(
+              label: '여유',
+              isSelected: selectedFilter == DashboardFilter.low,
+              onTap: () => setState(() => selectedFilter = DashboardFilter.low),
+              color: getPriorityBorderColor(Priority.low),
+            ),
+            const SizedBox(width: 8),
+            // 완료 필터
+            _buildFilterChip(
+              label: '완료',
+              isSelected: selectedFilter == DashboardFilter.completed,
+              onTap: () =>
+                  setState(() => selectedFilter = DashboardFilter.completed),
+              color: Colors.green,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -176,7 +201,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           color: isSelected ? color : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color : color.withOpacity(0.3),
+            color: isSelected ? color : color.withValues(alpha: 0.3),
             width: 1.5,
           ),
         ),
@@ -184,7 +209,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           label,
           style: TextStyle(
             color: isSelected ? Colors.white : color,
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
@@ -235,25 +260,55 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             final notifier = ref.read(routineNotifierProvider.notifier);
             final todayRoutines = notifier.getTodayRoutines(routines);
 
-            // 선택된 우선순위로 필터링
-            final filteredRoutines = selectedPriority == null
-                ? todayRoutines
-                : todayRoutines
-                    .where((routine) => routine.priority == selectedPriority)
+            // 🔥 핵심 수정: 완료되지 않은 루틴만 필터링
+            // 3일 루틴의 경우 해당 날짜에 완료되었는지 확인
+            final incompleteRoutines = todayRoutines
+                .where((routine) => !_isRoutineCompletedForToday(routine))
+                .toList();
+
+            // Debug logs (removed for production)
+            // Total routines: ${routines.length}
+            // Today routines: ${todayRoutines.length}
+            // Incomplete routines: ${incompleteRoutines.length}
+            // Completed routines: ${todayRoutines.where((r) => r.isCompletedToday).length}
+
+            // 선택된 필터로 루틴 필터링
+            List<Routine> filteredRoutines;
+            switch (selectedFilter) {
+              case DashboardFilter.all:
+                filteredRoutines = incompleteRoutines;
+                break;
+              case DashboardFilter.high:
+                filteredRoutines = incompleteRoutines
+                    .where((routine) => routine.priority == Priority.high)
                     .toList();
+                break;
+              case DashboardFilter.medium:
+                filteredRoutines = incompleteRoutines
+                    .where((routine) => routine.priority == Priority.medium)
+                    .toList();
+                break;
+              case DashboardFilter.low:
+                filteredRoutines = incompleteRoutines
+                    .where((routine) => routine.priority == Priority.low)
+                    .toList();
+                break;
+              case DashboardFilter.completed:
+                filteredRoutines = todayRoutines
+                    .where((routine) => _isRoutineCompletedForToday(routine))
+                    .toList();
+                break;
+            }
 
             if (filteredRoutines.isEmpty) {
-              // 모든 루틴이 완료되었는지 확인
-              final originalFilteredRoutines = selectedPriority == null
-                  ? todayRoutines
-                  : todayRoutines
-                      .where((routine) => routine.priority == selectedPriority)
-                      .toList();
-
-              final hasCompletedRoutines =
-                  originalFilteredRoutines.isNotEmpty &&
-                      originalFilteredRoutines
-                          .every((routine) => routine.isCompletedToday);
+              // 빈 상태 처리
+              final isCompletedFilter =
+                  selectedFilter == DashboardFilter.completed;
+              final hasCompletedRoutines = isCompletedFilter
+                  ? false // 완료 필터에서 빈 상태는 축하가 아님
+                  : todayRoutines.isNotEmpty &&
+                      todayRoutines.every(
+                          (routine) => _isRoutineCompletedForToday(routine));
 
               return Center(
                 child: Padding(
@@ -280,9 +335,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         child: Icon(
                           hasCompletedRoutines
                               ? Icons.celebration
-                              : (selectedPriority == null
-                                  ? Icons.add_task
-                                  : Icons.filter_list_off),
+                              : (isCompletedFilter
+                                  ? Icons.task_alt
+                                  : Icons.add_task),
                           size: 40,
                           color: hasCompletedRoutines
                               ? Colors.green.shade600
@@ -291,13 +346,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        hasCompletedRoutines
-                            ? (selectedPriority == null
-                                ? '🎉 오늘의 모든 루틴 완료!'
-                                : '🎉 ${getPriorityLabel(selectedPriority!)} 루틴 완료!')
-                            : (selectedPriority == null
-                                ? '오늘 할 루틴이 없습니다'
-                                : '${getPriorityLabel(selectedPriority!)} 루틴이 없습니다'),
+                        _getEmptyStateTitle(
+                            hasCompletedRoutines, isCompletedFilter),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 20,
@@ -309,13 +359,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        hasCompletedRoutines
-                            ? (selectedPriority == null
-                                ? '모든 할 일을 완료했어요!\n정말 대단해요! 🌟'
-                                : '해당 우선순위의 모든 할 일을 완료했어요!\n훌륭해요! ✨')
-                            : (selectedPriority == null
-                                ? '새로운 루틴을 추가해보세요!'
-                                : '다른 우선순위를 확인해보세요!'),
+                        _getEmptyStateSubtitle(
+                            hasCompletedRoutines, isCompletedFilter),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
@@ -395,8 +440,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   (a, b) => (a.dayNumber ?? 0).compareTo(b.dayNumber ?? 0));
             }
 
-            // 오늘의 루틴에서 그룹 정보 생성
-            for (final routine in todayRoutines) {
+            // 🔥 수정: 필터된 루틴에서 그룹 정보 생성
+            for (final routine in filteredRoutines) {
               if (routine.groupId != null) {
                 if (routine.isThreeDayRoutine &&
                     threeDayGroups.containsKey(routine.groupId!)) {
@@ -441,19 +486,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   groupRoutines = groupedRoutines[routine.groupId!];
                 }
 
-                return RoutineCard(
-                  routine: routine,
-                  borderColor: getPriorityBorderColor(routine.priority),
-                  groupRoutines: groupRoutines,
-                  isFiltered: selectedPriority != null,
-                  filterPriority: selectedPriority,
-                  onTap: () async {
-                    await context.router
-                        .push(RoutineDetailRoute(routine: routine));
-                    ref
-                        .read(routineNotifierProvider.notifier)
-                        .refreshRoutines();
-                  },
+                // 완료된 루틴은 투명도를 낮춰서 시각적 구분
+                final isCompletedRoutine =
+                    selectedFilter == DashboardFilter.completed;
+
+                return Opacity(
+                  opacity: isCompletedRoutine ? 0.7 : 1.0,
+                  child: RoutineCard(
+                    key: ValueKey(routine.id), // 🔥 고유 키 추가
+                    routine: routine,
+                    borderColor: getPriorityBorderColor(routine.priority),
+                    groupRoutines: groupRoutines,
+                    isFiltered: selectedFilter != DashboardFilter.all,
+                    filterPriority: _getFilterPriority(),
+                    onTap: () async {
+                      await context.router
+                          .push(RoutineDetailRoute(routine: routine));
+                      ref
+                          .read(routineNotifierProvider.notifier)
+                          .refreshRoutines();
+                    },
+                  ),
                 );
               },
             );
@@ -461,5 +514,80 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         );
       },
     );
+  }
+
+  String _getEmptyStateTitle(
+      bool hasCompletedRoutines, bool isCompletedFilter) {
+    if (hasCompletedRoutines) {
+      return '🎉 오늘의 모든 루틴 완료!';
+    }
+
+    if (isCompletedFilter) {
+      return '완료된 루틴이 없습니다';
+    }
+
+    switch (selectedFilter) {
+      case DashboardFilter.all:
+        return '오늘 할 루틴이 없습니다';
+      case DashboardFilter.high:
+        return '긴급 루틴이 없습니다';
+      case DashboardFilter.medium:
+        return '중요 루틴이 없습니다';
+      case DashboardFilter.low:
+        return '여유 루틴이 없습니다';
+      case DashboardFilter.completed:
+        return '완료된 루틴이 없습니다';
+    }
+  }
+
+  String _getEmptyStateSubtitle(
+      bool hasCompletedRoutines, bool isCompletedFilter) {
+    if (hasCompletedRoutines) {
+      return '모든 할 일을 완료했어요!\n정말 대단해요! 🌟';
+    }
+
+    if (isCompletedFilter) {
+      return '루틴을 완료하면 여기에 표시됩니다!';
+    }
+
+    return '새로운 루틴을 추가해보세요!';
+  }
+
+  Priority? _getFilterPriority() {
+    switch (selectedFilter) {
+      case DashboardFilter.high:
+        return Priority.high;
+      case DashboardFilter.medium:
+        return Priority.medium;
+      case DashboardFilter.low:
+        return Priority.low;
+      default:
+        return null;
+    }
+  }
+
+  /// 루틴이 오늘 완료되었는지 확인하는 메서드
+  /// 3일 루틴의 경우 해당 날짜에 완료되었는지 확인
+  bool _isRoutineCompletedForToday(Routine routine) {
+    final today = DateTime.now();
+
+    if (routine.isThreeDayRoutine) {
+      // 3일 루틴의 경우 해당 날짜에 완료되었는지 확인
+      final routineDate = routine.startDate;
+
+      // 루틴의 날짜가 오늘과 같은지 확인
+      final isRoutineForToday = Routine.isSameDay(routineDate, today);
+
+      if (isRoutineForToday) {
+        // 오늘 날짜에 완료되었는지 확인
+        return routine.isCompletedOnDate(today);
+      } else {
+        // 오늘이 아닌 3일 루틴은 표시하지 않음
+        return false;
+      }
+    } else {
+      // 일반 루틴의 경우 오늘 완료 여부 확인
+      return routine.isCompletedToday;
+    }
   }
 }

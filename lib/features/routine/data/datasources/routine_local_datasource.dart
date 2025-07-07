@@ -27,9 +27,9 @@ class MemoryRoutineLocalDataSource implements RoutineLocalDataSource {
   @override
   Future<Result<List<RoutineModel>>> getRoutines() async {
     try {
-      print('📦 Getting routines from memory storage...');
+      // print('📦 Getting routines from memory storage...');
       final routines = _memoryStorage.values.toList();
-      print('📊 Found ${routines.length} routines in memory');
+      // print('📊 Found ${routines.length} routines in memory');
       return Success(routines);
     } catch (e) {
       return ResultFailure(StorageFailure('메모리에서 데이터를 불러오는 중 오류가 발생했습니다: $e'));
@@ -55,7 +55,7 @@ class MemoryRoutineLocalDataSource implements RoutineLocalDataSource {
       }
 
       _memoryStorage[routine.id] = routine;
-      print('💾 Saved routine to memory: ${routine.title}');
+      // print('💾 Saved routine to memory: ${routine.title}');
 
       // 저장 후 검증
       final savedRoutine = _memoryStorage[routine.id];
@@ -65,7 +65,7 @@ class MemoryRoutineLocalDataSource implements RoutineLocalDataSource {
 
       return const Success(null);
     } catch (e) {
-      print('❌ Error saving routine: $e');
+      // print('❌ Error saving routine: $e');
       return ResultFailure(StorageFailure('루틴 저장 중 오류가 발생했습니다: $e'));
     }
   }
@@ -85,11 +85,11 @@ class MemoryRoutineLocalDataSource implements RoutineLocalDataSource {
       }
 
       _memoryStorage[routine.id] = routine;
-      print('🔄 Updated routine in memory: ${routine.title}');
+      // print('🔄 Updated routine in memory: ${routine.title}');
 
       return const Success(null);
     } catch (e) {
-      print('❌ Error updating routine: $e');
+      // print('❌ Error updating routine: $e');
       return ResultFailure(StorageFailure('루틴 수정 중 오류가 발생했습니다: $e'));
     }
   }
@@ -98,7 +98,7 @@ class MemoryRoutineLocalDataSource implements RoutineLocalDataSource {
   Future<Result<void>> deleteRoutine(String id) async {
     try {
       _memoryStorage.remove(id);
-      print('🗑️ Deleted routine from memory: $id');
+      // print('🗑️ Deleted routine from memory: $id');
       return const Success(null);
     } catch (e) {
       return ResultFailure(StorageFailure(e.toString()));
@@ -184,24 +184,24 @@ class HiveRoutineLocalDataSource implements RoutineLocalDataSource {
       try {
         // 이미 열려있는 박스 가져오기
         box = Hive.box<RoutineModel>(_boxName);
-        print('✅ Using existing Hive box');
+        // print('✅ Using existing Hive box');
       } catch (e) {
         // 박스가 없다면 새로 열기
-        print('📦 Opening new Hive box...');
+        // print('📦 Opening new Hive box...');
         box = await Hive.openBox<RoutineModel>(_boxName);
-        print('✅ Hive box opened successfully');
+        // print('✅ Hive box opened successfully');
       }
 
       // 박스 상태 확인
       final routineCount = box.length;
-      print('📊 Current routines in storage: $routineCount');
+      // print('📊 Current routines in storage: $routineCount');
 
       return HiveRoutineLocalDataSource(box);
     } catch (e) {
-      print('❌ Error initializing HiveRoutineLocalDataSource: $e');
+      // print('❌ Error initializing HiveRoutineLocalDataSource: $e');
 
       // 마지막 시도: 메모리 저장소로 폴백
-      print('🔄 Falling back to memory storage...');
+      // print('🔄 Falling back to memory storage...');
       throw Exception('Hive initialization failed, please restart the app: $e');
     }
   }
@@ -209,20 +209,20 @@ class HiveRoutineLocalDataSource implements RoutineLocalDataSource {
   @override
   Future<Result<List<RoutineModel>>> getRoutines() async {
     try {
-      print('📦 Getting routines from Hive box...');
+      // print('📦 Getting routines from Hive box...');
       final routines = _box.values.toList();
-      print('📊 Found ${routines.length} routines in storage');
+      // print('📊 Found ${routines.length} routines in storage');
       return Success(routines);
     } catch (e) {
-      print('💥 Error getting routines: $e');
+      // print('💥 Error getting routines: $e');
       // 스키마 변경으로 인한 데이터 호환성 문제 시 박스를 클리어
       if (e.toString().contains('type') || e.toString().contains('field')) {
         try {
-          print('🧹 Clearing corrupted data...');
+          // print('🧹 Clearing corrupted data...');
           await _box.clear();
           return Success(<RoutineModel>[]);
         } catch (clearError) {
-          print('❌ Failed to clear box: $clearError');
+          // print('❌ Failed to clear box: $clearError');
         }
       }
       return ResultFailure(StorageFailure('데이터를 불러오는 중 오류가 발생했습니다: $e'));
@@ -248,7 +248,7 @@ class HiveRoutineLocalDataSource implements RoutineLocalDataSource {
       }
 
       await _box.put(routine.id, routine);
-      print('💾 Saved routine: ${routine.title} (ID: ${routine.id})');
+      // print('💾 Saved routine: ${routine.title} (ID: ${routine.id})');
 
       // 저장 후 검증
       final savedRoutine = _box.get(routine.id);
@@ -258,7 +258,7 @@ class HiveRoutineLocalDataSource implements RoutineLocalDataSource {
 
       return const Success(null);
     } catch (e) {
-      print('❌ Error saving routine: $e');
+      // print('❌ Error saving routine: $e');
       return ResultFailure(StorageFailure('루틴 저장 중 오류가 발생했습니다: $e'));
     }
   }
@@ -278,11 +278,11 @@ class HiveRoutineLocalDataSource implements RoutineLocalDataSource {
       }
 
       await _box.put(routine.id, routine);
-      print('🔄 Updated routine: ${routine.title} (ID: ${routine.id})');
+      // print('🔄 Updated routine: ${routine.title} (ID: ${routine.id})');
 
       return const Success(null);
     } catch (e) {
-      print('❌ Error updating routine: $e');
+      // print('❌ Error updating routine: $e');
       return ResultFailure(StorageFailure('루틴 수정 중 오류가 발생했습니다: $e'));
     }
   }
@@ -348,10 +348,10 @@ class HiveRoutineLocalDataSource implements RoutineLocalDataSource {
       }
 
       await backupBox.close();
-      print('📦 Data backup completed: routines_backup_$timestamp');
+      // print('📦 Data backup completed: routines_backup_$timestamp');
       return const Success(null);
     } catch (e) {
-      print('❌ Backup failed: $e');
+      // print('❌ Backup failed: $e');
       return ResultFailure(StorageFailure('데이터 백업 중 오류가 발생했습니다: $e'));
     }
   }
@@ -366,10 +366,10 @@ class HiveRoutineLocalDataSource implements RoutineLocalDataSource {
       }
 
       // 복원 로직 구현 (향후 필요시)
-      print('🔄 Data restore feature - to be implemented');
+      // print('🔄 Data restore feature - to be implemented');
       return const Success(null);
     } catch (e) {
-      print('❌ Restore failed: $e');
+      // print('❌ Restore failed: $e');
       return ResultFailure(StorageFailure('데이터 복원 중 오류가 발생했습니다: $e'));
     }
   }
@@ -390,7 +390,7 @@ class HiveRoutineLocalDataSource implements RoutineLocalDataSource {
     try {
       final settingsBox = await Hive.openBox('app_settings');
       await settingsBox.put('data_version', version);
-      print('📝 Data version updated to: $version');
+      // print('📝 Data version updated to: $version');
       return const Success(null);
     } catch (e) {
       return ResultFailure(StorageFailure('버전 정보를 저장하는 중 오류가 발생했습니다: $e'));

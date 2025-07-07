@@ -49,10 +49,13 @@ mixin _$RoutineModel {
   @HiveField(14)
   DateTime? get completedAt => throw _privateConstructorUsedError;
   @HiveField(15)
-  RoutineType get routineType => throw _privateConstructorUsedError;
+  List<DateTime> get completionHistory =>
+      throw _privateConstructorUsedError; // 완료 이력 추가
   @HiveField(16)
-  String? get groupId => throw _privateConstructorUsedError;
+  RoutineType get routineType => throw _privateConstructorUsedError;
   @HiveField(17)
+  String? get groupId => throw _privateConstructorUsedError;
+  @HiveField(18)
   int? get dayNumber => throw _privateConstructorUsedError;
 
   /// Serializes this RoutineModel to a JSON map.
@@ -86,9 +89,10 @@ abstract class $RoutineModelCopyWith<$Res> {
       @HiveField(12) String? category,
       @HiveField(13) Priority priority,
       @HiveField(14) DateTime? completedAt,
-      @HiveField(15) RoutineType routineType,
-      @HiveField(16) String? groupId,
-      @HiveField(17) int? dayNumber});
+      @HiveField(15) List<DateTime> completionHistory,
+      @HiveField(16) RoutineType routineType,
+      @HiveField(17) String? groupId,
+      @HiveField(18) int? dayNumber});
 }
 
 /// @nodoc
@@ -120,6 +124,7 @@ class _$RoutineModelCopyWithImpl<$Res, $Val extends RoutineModel>
     Object? category = freezed,
     Object? priority = null,
     Object? completedAt = freezed,
+    Object? completionHistory = null,
     Object? routineType = null,
     Object? groupId = freezed,
     Object? dayNumber = freezed,
@@ -181,6 +186,10 @@ class _$RoutineModelCopyWithImpl<$Res, $Val extends RoutineModel>
           ? _value.completedAt
           : completedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      completionHistory: null == completionHistory
+          ? _value.completionHistory
+          : completionHistory // ignore: cast_nullable_to_non_nullable
+              as List<DateTime>,
       routineType: null == routineType
           ? _value.routineType
           : routineType // ignore: cast_nullable_to_non_nullable
@@ -220,9 +229,10 @@ abstract class _$$RoutineModelImplCopyWith<$Res>
       @HiveField(12) String? category,
       @HiveField(13) Priority priority,
       @HiveField(14) DateTime? completedAt,
-      @HiveField(15) RoutineType routineType,
-      @HiveField(16) String? groupId,
-      @HiveField(17) int? dayNumber});
+      @HiveField(15) List<DateTime> completionHistory,
+      @HiveField(16) RoutineType routineType,
+      @HiveField(17) String? groupId,
+      @HiveField(18) int? dayNumber});
 }
 
 /// @nodoc
@@ -252,6 +262,7 @@ class __$$RoutineModelImplCopyWithImpl<$Res>
     Object? category = freezed,
     Object? priority = null,
     Object? completedAt = freezed,
+    Object? completionHistory = null,
     Object? routineType = null,
     Object? groupId = freezed,
     Object? dayNumber = freezed,
@@ -313,6 +324,10 @@ class __$$RoutineModelImplCopyWithImpl<$Res>
           ? _value.completedAt
           : completedAt // ignore: cast_nullable_to_non_nullable
               as DateTime?,
+      completionHistory: null == completionHistory
+          ? _value._completionHistory
+          : completionHistory // ignore: cast_nullable_to_non_nullable
+              as List<DateTime>,
       routineType: null == routineType
           ? _value.routineType
           : routineType // ignore: cast_nullable_to_non_nullable
@@ -348,10 +363,12 @@ class _$RoutineModelImpl implements _RoutineModel {
       @HiveField(12) this.category,
       @HiveField(13) this.priority = Priority.medium,
       @HiveField(14) this.completedAt,
-      @HiveField(15) this.routineType = RoutineType.daily,
-      @HiveField(16) this.groupId,
-      @HiveField(17) this.dayNumber})
-      : _tags = tags;
+      @HiveField(15) final List<DateTime> completionHistory = const [],
+      @HiveField(16) this.routineType = RoutineType.daily,
+      @HiveField(17) this.groupId,
+      @HiveField(18) this.dayNumber})
+      : _tags = tags,
+        _completionHistory = completionHistory;
 
   factory _$RoutineModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$RoutineModelImplFromJson(json);
@@ -405,20 +422,32 @@ class _$RoutineModelImpl implements _RoutineModel {
   @override
   @HiveField(14)
   final DateTime? completedAt;
+  final List<DateTime> _completionHistory;
   @override
   @JsonKey()
   @HiveField(15)
+  List<DateTime> get completionHistory {
+    if (_completionHistory is EqualUnmodifiableListView)
+      return _completionHistory;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_completionHistory);
+  }
+
+// 완료 이력 추가
+  @override
+  @JsonKey()
+  @HiveField(16)
   final RoutineType routineType;
   @override
-  @HiveField(16)
+  @HiveField(17)
   final String? groupId;
   @override
-  @HiveField(17)
+  @HiveField(18)
   final int? dayNumber;
 
   @override
   String toString() {
-    return 'RoutineModel(id: $id, title: $title, memo: $memo, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, tags: $tags, targetCompletionCount: $targetCompletionCount, currentCompletionCount: $currentCompletionCount, startDate: $startDate, endDate: $endDate, category: $category, priority: $priority, completedAt: $completedAt, routineType: $routineType, groupId: $groupId, dayNumber: $dayNumber)';
+    return 'RoutineModel(id: $id, title: $title, memo: $memo, isActive: $isActive, createdAt: $createdAt, updatedAt: $updatedAt, tags: $tags, targetCompletionCount: $targetCompletionCount, currentCompletionCount: $currentCompletionCount, startDate: $startDate, endDate: $endDate, category: $category, priority: $priority, completedAt: $completedAt, completionHistory: $completionHistory, routineType: $routineType, groupId: $groupId, dayNumber: $dayNumber)';
   }
 
   @override
@@ -449,6 +478,8 @@ class _$RoutineModelImpl implements _RoutineModel {
                 other.priority == priority) &&
             (identical(other.completedAt, completedAt) ||
                 other.completedAt == completedAt) &&
+            const DeepCollectionEquality()
+                .equals(other._completionHistory, _completionHistory) &&
             (identical(other.routineType, routineType) ||
                 other.routineType == routineType) &&
             (identical(other.groupId, groupId) || other.groupId == groupId) &&
@@ -474,6 +505,7 @@ class _$RoutineModelImpl implements _RoutineModel {
       category,
       priority,
       completedAt,
+      const DeepCollectionEquality().hash(_completionHistory),
       routineType,
       groupId,
       dayNumber);
@@ -510,9 +542,10 @@ abstract class _RoutineModel implements RoutineModel {
       @HiveField(12) final String? category,
       @HiveField(13) final Priority priority,
       @HiveField(14) final DateTime? completedAt,
-      @HiveField(15) final RoutineType routineType,
-      @HiveField(16) final String? groupId,
-      @HiveField(17) final int? dayNumber}) = _$RoutineModelImpl;
+      @HiveField(15) final List<DateTime> completionHistory,
+      @HiveField(16) final RoutineType routineType,
+      @HiveField(17) final String? groupId,
+      @HiveField(18) final int? dayNumber}) = _$RoutineModelImpl;
 
   factory _RoutineModel.fromJson(Map<String, dynamic> json) =
       _$RoutineModelImpl.fromJson;
@@ -561,12 +594,15 @@ abstract class _RoutineModel implements RoutineModel {
   DateTime? get completedAt;
   @override
   @HiveField(15)
-  RoutineType get routineType;
+  List<DateTime> get completionHistory; // 완료 이력 추가
   @override
   @HiveField(16)
-  String? get groupId;
+  RoutineType get routineType;
   @override
   @HiveField(17)
+  String? get groupId;
+  @override
+  @HiveField(18)
   int? get dayNumber;
 
   /// Create a copy of RoutineModel
