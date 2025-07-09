@@ -5,6 +5,8 @@ import '../../features/routine/domain/entities/routine.dart';
 import '../../features/routine/presentation/screens/routine_form_screen.dart';
 import '../../features/routine/presentation/screens/routine_list_screen.dart';
 import '../../features/routine/presentation/screens/routine_detail_screen.dart';
+import '../../features/splash/splash_screen.dart';
+import '../../features/onboarding/onboarding_screen.dart';
 
 part 'app_router.gr.dart';
 
@@ -13,13 +15,21 @@ class AppRouter extends _$AppRouter {
   @override
   List<AutoRoute> get routes => [
         AutoRoute(
+          page: SplashRoute.page,
+          initial: true,
+          path: '/splash',
+        ),
+        AutoRoute(
+          page: OnboardingRoute.page,
+          path: '/onboarding',
+        ),
+        AutoRoute(
           page: DashboardRoute.page,
-          initial: true, // 여기에 initial: true 추가
-          path: '/', // 메인 경로로 변경
+          path: '/',
         ),
         AutoRoute(
           page: RoutineListRoute.page,
-          path: '/routines', // initial: true 제거
+          path: '/routines',
         ),
         AutoRoute(
           page: RoutineFormRoute.page,

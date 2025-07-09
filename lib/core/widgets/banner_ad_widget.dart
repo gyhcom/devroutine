@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-
+import '../services/ad_service.dart';
 import '../providers/ad_provider.dart';
 
 class BannerAdWidget extends ConsumerWidget {
@@ -9,6 +9,11 @@ class BannerAdWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 플랫폼이 광고를 지원하지 않으면 빈 위젯 반환
+    if (!AdService().isAdSupportedPlatform) {
+      return const SizedBox.shrink();
+    }
+
     final adState = ref.watch(bannerAdProvider);
 
     return adState.when(

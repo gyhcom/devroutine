@@ -1,13 +1,13 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:auto_route/auto_route.dart';
 
-import '../../../../core/routing/app_router.dart';
 import '../../domain/entities/routine.dart';
 import '../providers/routine_provider.dart';
 import '../utils/priority_color_util.dart';
 import '../widgets/flush_message.dart';
+import '../../../../core/routing/app_router.dart';
 
 // 상수 클래스
 class RoutineDetailConstants {
@@ -160,7 +160,7 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
             ),
             const SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => context.router.pop(),
+              onPressed: () => Navigator.pop(context),
               child: const Text('돌아가기'),
             ),
           ],
@@ -743,11 +743,11 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
         content: Text('정말로 "${routine.title}" 루틴을 삭제하시겠습니까?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).maybePop(false),
+            onPressed: () => context.router.pop(false),
             child: const Text('취소'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).maybePop(true),
+            onPressed: () => context.router.pop(true),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red,
             ),
@@ -762,7 +762,7 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
           .read(routineNotifierProvider.notifier)
           .deleteRoutine(routine.id);
       await showTopMessage(context, '✅ 루틴이 삭제되었습니다!');
-      context.router.maybePop();
+      context.router.pop();
     }
   }
 
@@ -819,18 +819,18 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).maybePop('cancel'),
+            onPressed: () => context.router.pop('cancel'),
             child: const Text('취소'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).maybePop('single'),
+            onPressed: () => context.router.pop('single'),
             style: TextButton.styleFrom(
               foregroundColor: Colors.orange.shade600,
             ),
             child: const Text('이 루틴만 삭제'),
           ),
           FilledButton(
-            onPressed: () => Navigator.of(context).maybePop('group'),
+            onPressed: () => context.router.pop('group'),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.red,
             ),
@@ -845,13 +845,13 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
           .read(routineNotifierProvider.notifier)
           .deleteRoutine(routine.id);
       await showTopMessage(context, '✅ 루틴이 삭제되었습니다!');
-      context.router.maybePop();
+      context.router.pop();
     } else if (result == 'group') {
       await ref
           .read(routineNotifierProvider.notifier)
           .deleteThreeDayGroup(routine.groupId!);
       await showTopMessage(context, '✅ 3일 루틴 그룹이 삭제되었습니다!');
-      context.router.maybePop();
+      context.router.pop();
     }
   }
 }

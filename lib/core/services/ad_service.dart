@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
@@ -14,9 +15,23 @@ class AdService {
 
   BannerAd? _cachedBannerAd;
 
+  /// 플랫폼이 광고를 지원하는지 확인
+  bool get isAdSupportedPlatform {
+    return Platform.isAndroid || Platform.isIOS;
+  }
+
   /// 초기화
   Future<void> initialize() async {
     if (_isInitialized) return;
+
+    // macOS, Windows, Linux에서는 광고 초기화 건너뛰기
+    if (!isAdSupportedPlatform) {
+      if (kDebugMode) {
+        debugPrint('ℹ️ 현재 플랫폼(${Platform.operatingSystem})은 광고를 지원하지 않습니다.');
+      }
+      _isInitialized = true;
+      return;
+    }
 
     try {
       await MobileAds.instance.initialize();
@@ -36,6 +51,14 @@ class AdService {
 
   /// 배너 광고 로드 (재사용 지원)
   Future<BannerAd?> loadBannerAd() async {
+    // 지원하지 않는 플랫폼에서는 null 반환
+    if (!isAdSupportedPlatform) {
+      if (kDebugMode) {
+        debugPrint('ℹ️ 현재 플랫폼에서는 광고를 지원하지 않습니다.');
+      }
+      return null;
+    }
+
     if (_cachedBannerAd != null) return _cachedBannerAd;
 
     if (!_isInitialized) await initialize();

@@ -1,4 +1,3 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:devroutine/core/routing/app_router.dart';
 import 'package:devroutine/core/widgets/banner_ad_widget.dart';
 import 'package:devroutine/features/routine/domain/entities/routine.dart';
@@ -6,9 +5,13 @@ import 'package:devroutine/features/routine/presentation/providers/routine_provi
 import 'package:devroutine/features/routine/presentation/utils/priority_color_util.dart';
 import 'package:devroutine/features/routine/presentation/widgets/routine_card.dart';
 import 'package:devroutine/features/routine/presentation/widgets/today_summary_card.dart';
+import 'package:devroutine/features/routine/presentation/screens/routine_list_screen.dart';
+import 'package:devroutine/features/routine/presentation/screens/routine_form_screen.dart';
+import 'package:devroutine/features/routine/presentation/screens/routine_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:auto_route/auto_route.dart';
 
 // 대시보드 필터 타입 정의
 enum DashboardFilter {
@@ -536,8 +539,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     isFiltered: selectedFilter != DashboardFilter.all,
                     filterPriority: _getFilterPriority(),
                     onTap: () async {
-                      await context.router
-                          .push(RoutineDetailRoute(routine: routine));
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              RoutineDetailScreen(routine: routine),
+                        ),
+                      );
                       ref
                           .read(routineNotifierProvider.notifier)
                           .refreshRoutines();

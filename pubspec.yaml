@@ -42,6 +42,11 @@ dependencies:
   # 광고
   google_mobile_ads: ^4.0.0
 
+  # 온보딩 & 스플래시
+  shared_preferences: ^2.2.2
+  introduction_screen: ^3.1.14
+  flutter_native_splash: ^2.3.10
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

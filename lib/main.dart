@@ -6,8 +6,10 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/routing/app_router.dart';
 import 'core/providers/theme_provider.dart';
+import 'core/providers/onboarding_provider.dart';
 import 'features/routine/data/models/routine_model.dart';
 import 'features/routine/domain/entities/routine.dart';
+import 'features/splash/splash_screen.dart';
 
 // Priority Adapter
 class PriorityAdapter extends TypeAdapter<Priority> {
@@ -82,7 +84,7 @@ void main() async {
   try {
     // Locale 초기화 (한국어)
     await initializeDateFormatting('ko_KR', '');
-    
+
     // Hive 초기화
     await Hive.initFlutter();
 
@@ -136,6 +138,18 @@ class DevRoutineApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(themeNotifierProvider);
+
+    // 온보딩 프로바이더 강제 초기화
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (kDebugMode) {
+        print('🔄 [MAIN] 온보딩 프로바이더 강제 초기화');
+      }
+      ref.read(onboardingProvider.notifier);
+    });
+
+    if (kDebugMode) {
+      print('🏗️ [MAIN] DevRoutineApp build 메서드 호출됨');
+    }
 
     return MaterialApp.router(
       title: 'DevRoutine',
