@@ -413,6 +413,11 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
       title: '루틴을 시작해보세요!',
       subtitle: '일상을 더 체계적으로 관리할 수 있도록\n첫 번째 루틴을 추가해보세요.',
       actionText: '루틴 추가하기',
+      iconColor: Colors.grey.shade600,
+      containerColor: Colors.grey.shade100,
+      onTap: () {
+        context.router.push(RoutineFormRoute());
+      },
     );
   }
 
@@ -484,8 +489,16 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
     required String title,
     required String subtitle,
     String? actionText,
+    Color? iconColor,
+    Color? containerColor,
+    VoidCallback? onTap,
   }) {
-    return Center(
+    final defaultColor = Theme.of(context).colorScheme.primary;
+    final finalIconColor = iconColor ?? defaultColor;
+    final finalContainerColor = containerColor ??
+        Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3);
+
+    Widget content = Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -495,16 +508,13 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
               width: 96,
               height: 96,
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primaryContainer
-                    .withValues(alpha: 0.3),
+                color: finalContainerColor,
                 borderRadius: BorderRadius.circular(48),
               ),
               child: Icon(
                 icon,
                 size: RoutineListScreenConstants.emptyStateIconSize,
-                color: Theme.of(context).colorScheme.primary,
+                color: finalIconColor,
               ),
             ),
             const SizedBox(height: 24),
@@ -523,6 +533,15 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
         ),
       ),
     );
+
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        child: content,
+      );
+    }
+
+    return content;
   }
 
   Widget _buildActiveRoutineList(
@@ -544,6 +563,20 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
     activeRoutines.sort((a, b) => a.priority.index.compareTo(b.priority.index));
 
     if (activeRoutines.isEmpty) {
+      Color iconColor;
+      Color containerColor;
+
+      if (selectedPriority != null) {
+        // 우선순위별 색상 사용
+        iconColor = getPriorityBorderColor(selectedPriority!);
+        containerColor =
+            getPriorityBorderColor(selectedPriority!).withValues(alpha: 0.1);
+      } else {
+        // 기본 파란색 계열 사용
+        iconColor = Colors.blue.shade600;
+        containerColor = Colors.blue.shade50;
+      }
+
       return _buildEmptyStateContent(
         context,
         icon: selectedPriority == null
@@ -555,6 +588,11 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
         subtitle: selectedPriority == null
             ? '모든 루틴이 완료되었거나\n새로운 루틴을 추가해보세요!'
             : '다른 우선순위를 확인해보거나\n새로운 루틴을 추가해보세요!',
+        iconColor: iconColor,
+        containerColor: containerColor,
+        onTap: () {
+          context.router.push(RoutineFormRoute());
+        },
       );
     }
 
@@ -636,23 +674,33 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
     if (completedRoutines.isEmpty) {
       String title;
       String subtitle;
+      Color iconColor;
+      Color containerColor;
 
       switch (selectedHistoryFilter) {
         case CompletionHistoryFilter.today:
           title = '오늘 완료된 루틴이 없습니다';
           subtitle = '루틴을 완료하면 여기에 표시됩니다!';
+          iconColor = Colors.blue.shade600;
+          containerColor = Colors.blue.shade50;
           break;
         case CompletionHistoryFilter.yesterday:
           title = '어제 완료된 루틴이 없습니다';
           subtitle = '어제는 루틴을 완료하지 않았습니다.';
+          iconColor = Colors.orange.shade600;
+          containerColor = Colors.orange.shade50;
           break;
         case CompletionHistoryFilter.thisWeek:
           title = '이번 주 완료된 루틴이 없습니다';
           subtitle = '이번 주에 완료된 루틴이 없습니다.';
+          iconColor = Colors.purple.shade600;
+          containerColor = Colors.purple.shade50;
           break;
         case CompletionHistoryFilter.thisMonth:
           title = '이번 달 완료된 루틴이 없습니다';
           subtitle = '이번 달에 완료된 루틴이 없습니다.';
+          iconColor = Colors.green.shade600;
+          containerColor = Colors.green.shade50;
           break;
       }
 
@@ -661,6 +709,11 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
         icon: Icons.history_rounded,
         title: title,
         subtitle: subtitle,
+        iconColor: iconColor,
+        containerColor: containerColor,
+        onTap: () {
+          context.router.push(RoutineFormRoute());
+        },
       );
     }
 

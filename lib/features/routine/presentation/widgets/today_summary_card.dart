@@ -1,8 +1,10 @@
-import 'package:devroutine/features/routine/presentation/providers/routine_provider.dart';
-import 'package:devroutine/features/routine/domain/entities/routine.dart';
-import 'package:devroutine/features/routine/presentation/utils/priority_color_util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:auto_route/auto_route.dart';
+import 'package:devroutine/core/routing/app_router.dart';
+import 'package:devroutine/features/routine/domain/entities/routine.dart';
+import 'package:devroutine/features/routine/presentation/providers/routine_provider.dart';
+import 'package:devroutine/features/routine/presentation/utils/priority_color_util.dart';
 
 // 상수 정의
 class SummaryCardConstants {
@@ -281,23 +283,28 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
   }
 
   Widget _buildEmptyState() {
-    return SizedBox(
-      height: 80,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.today_outlined,
-              size: 32,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: SummaryCardConstants.smallSpacing),
-            Text(
-              '오늘 할 루틴을 추가해보세요',
-              style: SummaryCardStyles.subtitleStyle,
-            ),
-          ],
+    return GestureDetector(
+      onTap: () {
+        context.router.push(RoutineFormRoute());
+      },
+      child: SizedBox(
+        height: 80,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.today_outlined,
+                size: 32,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: SummaryCardConstants.smallSpacing),
+              Text(
+                '오늘 할 루틴을 추가해보세요',
+                style: SummaryCardStyles.subtitleStyle,
+              ),
+            ],
+          ),
         ),
       ),
     );
