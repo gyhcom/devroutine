@@ -1,5 +1,6 @@
 import 'package:devroutine/core/routing/app_router.dart';
 import 'package:devroutine/core/widgets/banner_ad_widget.dart';
+import 'package:devroutine/core/services/notification_service.dart';
 import 'package:devroutine/features/routine/domain/entities/routine.dart';
 import 'package:devroutine/features/routine/presentation/providers/routine_provider.dart';
 import 'package:devroutine/features/routine/presentation/utils/priority_color_util.dart';
@@ -12,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:auto_route/auto_route.dart';
+import 'package:flutter/foundation.dart';
 
 // 대시보드 필터 타입 정의
 enum DashboardFilter {
@@ -39,6 +41,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       appBar: AppBar(
         title: const Text('3Days - 나의 루틴'),
         actions: [
+          // 디버그 모드에서만 보이는 알림 테스트 버튼
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.notifications_active),
+              onPressed: () => _showNotificationTestMenu(context),
+              tooltip: '알림 테스트',
+            ),
           // 전체 루틴 보기 버튼
           IconButton(
             icon: const Icon(Icons.list),
@@ -641,5 +650,149 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       // 일반 루틴의 경우 오늘 완료 여부 확인
       return routine.isCompletedToday;
     }
+  }
+
+  /// 알림 테스트 메뉴 표시 (디버그 모드 전용)
+  void _showNotificationTestMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              '🔔 알림 테스트 메뉴',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildTestButton(
+              context,
+              '즉시 알림 테스트',
+              Icons.notifications,
+              Colors.blue,
+              () => _sendInstantNotification(),
+            ),
+            _buildTestButton(
+              context,
+              '5초 후 알림 테스트',
+              Icons.schedule,
+              Colors.orange,
+              () => _sendDelayedNotification(5),
+            ),
+            _buildTestButton(
+              context,
+              '30초 후 알림 테스트',
+              Icons.timer,
+              Colors.green,
+              () => _sendDelayedNotification(30),
+            ),
+            _buildTestButton(
+              context,
+              '3일 챌린지 격려 메시지',
+              Icons.local_fire_department,
+              Colors.red,
+              () => _sendChallengeNotification(),
+            ),
+            _buildTestButton(
+              context,
+              '모든 알림 취소',
+              Icons.cancel,
+              Colors.grey,
+              () => _cancelAllNotifications(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 테스트 버튼 위젯
+  Widget _buildTestButton(
+    BuildContext context,
+    String text,
+    IconData icon,
+    Color color,
+    VoidCallback onPressed,
+  ) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ElevatedButton.icon(
+        onPressed: () {
+          Navigator.pop(context);
+          onPressed();
+        },
+        icon: Icon(icon, color: Colors.white),
+        label: Text(text, style: const TextStyle(color: Colors.white)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        ),
+      ),
+    );
+  }
+
+  /// 즉시 알림 전송
+  void _sendInstantNotification() {
+    NotificationService().showInstantNotification(
+      title: '🎯 즉시 알림 테스트',
+      body: '알림이 정상적으로 작동하고 있습니다!',
+      payload: 'test:instant',
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('즉시 알림이 전송되었습니다!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// 지연 알림 전송
+  void _sendDelayedNotification(int seconds) {
+    NotificationService().scheduleTestNotification(
+      delay: Duration(seconds: seconds),
+      title: '⏰ 지연 알림 테스트',
+      body: '${seconds}초 후 알림이 도착했습니다!',
+      payload: 'test:delayed:$seconds',
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${seconds}초 후 알림이 예약되었습니다!'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// 3일 챌린지 격려 메시지
+  void _sendChallengeNotification() {
+    NotificationService().scheduleThreeDayChallenge(
+      routineTitle: '테스트 루틴',
+      dayNumber: 2,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('3일 챌린지 격려 메시지가 내일 오전 9시에 예약되었습니다!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  /// 모든 알림 취소
+  void _cancelAllNotifications() {
+    NotificationService().cancelAllNotifications();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('모든 알림이 취소되었습니다!'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 }

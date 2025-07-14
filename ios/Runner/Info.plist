@@ -30,6 +30,8 @@
 	<array>
 		<string>_dartobservatory._tcp</string>
 	</array>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>This app needs notification permissions to remind you about your daily routines and 3-day challenges.</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-4940948867704473~8069073964</string>
 	<key>SKAdNetworkItems</key>

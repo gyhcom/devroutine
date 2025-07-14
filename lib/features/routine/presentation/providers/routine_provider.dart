@@ -1,6 +1,7 @@
 import 'package:hive/hive.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../data/datasources/routine_local_datasource.dart';
 import '../../data/models/routine_model.dart';
 import '../../data/repositories/routine_repository_impl.dart';
@@ -293,6 +294,9 @@ class RoutineNotifier extends _$RoutineNotifier {
           if (result case Success()) {
             // print('✅ 데이터베이스 업데이트 성공 - ${routine.title}');
 
+            // 알림 스케줄링 (루틴 완료 시)
+            _scheduleRoutineReminder(routine);
+
             // 3일 루틴 완료 체크 (데이터베이스 업데이트 성공 후에만)
             if (routine.groupId != null) {
               final isGroupCompleted =
@@ -302,6 +306,9 @@ class RoutineNotifier extends _$RoutineNotifier {
                 Future.delayed(const Duration(milliseconds: 500), () {
                   _showThreeDayCompletionCelebration(routine.groupId!);
                 });
+              } else {
+                // 3일 루틴 진행 중 - 격려 메시지 스케줄링
+                _scheduleThreeDayEncouragement(routine, updatedRoutines);
               }
             }
           } else if (result case ResultFailure(failure: final failure)) {
@@ -353,6 +360,70 @@ class RoutineNotifier extends _$RoutineNotifier {
         }
       },
     );
+  }
+
+  /// 루틴 완료 시 다음 날 리마인더 알림 스케줄링
+  void _scheduleRoutineReminder(Routine routine) {
+    try {
+      // 루틴이 일일 루틴이고 활성 상태일 때만 알림 스케줄링
+      if (!routine.isThreeDayRoutine && routine.isActive) {
+        // 내일 같은 시간에 리마인더 설정 (기본 오전 9시)
+        final tomorrow = DateTime.now().add(const Duration(days: 1));
+        final reminderTime = DateTime(
+          tomorrow.year,
+          tomorrow.month,
+          tomorrow.day,
+          9, // 오전 9시
+        );
+
+        NotificationService().scheduleRoutineReminder(
+          routineId: routine.id,
+          routineTitle: routine.title,
+          scheduledTime: reminderTime,
+        );
+      }
+    } catch (e) {
+      // 알림 스케줄링 실패 시 로그만 출력 (앱 동작에는 영향 없음)
+      // print('⚠️ 알림 스케줄링 실패: $e');
+    }
+  }
+
+  /// 3일 챌린지 격려 메시지 스케줄링
+  void _scheduleThreeDayEncouragement(Routine routine, List<Routine> routines) {
+    try {
+      if (!routine.isThreeDayRoutine || routine.groupId == null) return;
+
+      // 같은 그룹의 모든 루틴 가져오기
+      final groupRoutines =
+          routines.where((r) => r.groupId == routine.groupId).toList();
+      if (groupRoutines.isEmpty) return;
+
+      // 완료된 일차 수 계산
+      final completedDays =
+          groupRoutines.where((r) => r.isCompletedToday).length;
+      final totalDays = groupRoutines.length;
+
+      // 기본 제목 추출 (일차 정보 제거)
+      final baseTitle = routine.title.replaceAll(RegExp(r'\s*\(\d+일차\)'), '');
+
+      // 진행 상황에 따른 격려 메시지 스케줄링
+      if (completedDays == 1 && totalDays == 3) {
+        // 1일차 완료 시 - 2일차 격려 메시지
+        NotificationService().scheduleThreeDayChallenge(
+          routineTitle: baseTitle,
+          dayNumber: 2,
+        );
+      } else if (completedDays == 2 && totalDays == 3) {
+        // 2일차 완료 시 - 3일차 격려 메시지
+        NotificationService().scheduleThreeDayChallenge(
+          routineTitle: baseTitle,
+          dayNumber: 3,
+        );
+      }
+    } catch (e) {
+      // 알림 스케줄링 실패 시 로그만 출력 (앱 동작에는 영향 없음)
+      // print('⚠️ 3일 챌린지 격려 메시지 스케줄링 실패: $e');
+    }
   }
 
   // 루틴 미완료 메서드

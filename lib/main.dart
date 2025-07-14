@@ -7,6 +7,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'core/routing/app_router.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/onboarding_provider.dart';
+import 'core/services/notification_service.dart';
 import 'features/routine/data/models/routine_model.dart';
 import 'features/routine/domain/entities/routine.dart';
 import 'features/splash/splash_screen.dart';
@@ -109,6 +110,13 @@ void main() async {
 
     if (kDebugMode) {
       print('✅ Hive 초기화 완료');
+    }
+
+    // 알림 서비스 초기화
+    await NotificationService().initialize();
+
+    if (kDebugMode) {
+      print('✅ 알림 서비스 초기화 완료');
     }
 
     runApp(
