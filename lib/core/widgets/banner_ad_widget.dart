@@ -9,24 +9,26 @@ class BannerAdWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 플랫폼이 광고를 지원하지 않으면 빈 위젯 반환
-    if (!AdService().isAdSupportedPlatform) {
+    final adService = AdService();
+
+    // 지원하지 않는 플랫폼에서는 빈 컨테이너 반환
+    if (!adService.isAdSupportedPlatform) {
       return const SizedBox.shrink();
     }
 
-    final adState = ref.watch(bannerAdProvider);
+    final bannerAdAsyncValue = ref.watch(bannerAdProvider);
 
-    return adState.when(
-      data: (ad) {
-        if (ad == null) {
+    return bannerAdAsyncValue.when(
+      data: (bannerAd) {
+        if (bannerAd == null) {
           return const SizedBox.shrink();
         }
 
         return Container(
-          width: ad.size.width.toDouble(),
-          height: ad.size.height.toDouble(),
           alignment: Alignment.center,
-          child: AdWidget(ad: ad),
+          width: bannerAd.size.width.toDouble(),
+          height: bannerAd.size.height.toDouble(),
+          child: AdWidget(ad: bannerAd),
         );
       },
       loading: () => const SizedBox(

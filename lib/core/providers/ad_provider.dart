@@ -12,5 +12,5 @@ final bannerAdProvider = FutureProvider<BannerAd?>((ref) async {
   }
 
   await adService.initialize();
-  return adService.loadBannerAd();
+  return await adService.createBannerAd();
 });
