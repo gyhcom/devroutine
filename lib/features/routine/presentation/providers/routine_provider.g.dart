@@ -24,7 +24,7 @@ final routineRepositoryProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef RoutineRepositoryRef = AutoDisposeProviderRef<RoutineRepository>;
-String _$routineNotifierHash() => r'2bbb896b1430f7895a49b6e051491b03a8fd567a';
+String _$routineNotifierHash() => r'e93e6e5a1a45e010bc4919fa388f84d732b4bb65';
 
 /// See also [RoutineNotifier].
 @ProviderFor(RoutineNotifier)

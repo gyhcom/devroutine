@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
+import 'firebase_options.dart';
 import 'core/routing/app_router.dart';
 import 'core/providers/theme_provider.dart';
 import 'core/providers/onboarding_provider.dart';
@@ -83,6 +86,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
+    // Firebase 초기화
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    // Crashlytics 설정 (릴리즈 모드에서만 활성화)
+    if (kReleaseMode) {
+      FlutterError.onError =
+          FirebaseCrashlytics.instance.recordFlutterFatalError;
+    }
+
     // Locale 초기화 (한국어)
     await initializeDateFormatting('ko_KR', '');
 
