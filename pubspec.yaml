@@ -74,6 +74,26 @@ dev_dependencies:
   another_flushbar: ^1.10.29
 
   hive_generator: ^2.0.1
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.1
 
 flutter:
   uses-material-design: true
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#2188FF"
+  adaptive_icon_foreground: "assets/icons/app_icon.png"
+
+flutter_native_splash:
+  color: "#2188FF"
+  image: "assets/icons/splash_icon.png"
+  android_12:
+    color: "#2188FF"
+    image: "assets/icons/splash_icon.png"
+  ios: true
+  android: true
+  web: true
