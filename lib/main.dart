@@ -171,7 +171,7 @@ class DevRoutineApp extends ConsumerWidget {
     }
 
     return MaterialApp.router(
-      title: 'DevRoutine',
+      title: '3일루틴',
       debugShowCheckedModeBanner: false,
       theme: theme,
       routerConfig: _appRouter.config(),

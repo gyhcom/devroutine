@@ -171,25 +171,21 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
 
   Widget _buildDetailScaffold(Routine routine, List<Routine> allRoutines) {
     final priorityColor = getPriorityBorderColor(routine.priority);
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          _buildSliverAppBar(routine, priorityColor),
+          _buildSliverAppBar(routine, priorityColor, isLandscape),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(RoutineDetailConstants.cardPadding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildCompletionSection(routine),
-                  const SizedBox(height: RoutineDetailConstants.sectionSpacing),
-                  _buildInfoSection(routine, allRoutines),
-                  const SizedBox(height: RoutineDetailConstants.sectionSpacing),
-                  _buildActionButtons(routine),
-                  const SizedBox(height: 80), // 하단 여백
-                ],
+              padding: EdgeInsets.all(
+                isLandscape ? 12 : RoutineDetailConstants.cardPadding,
               ),
+              child: isLandscape
+                  ? _buildLandscapeLayout(routine, allRoutines)
+                  : _buildPortraitLayout(routine, allRoutines),
             ),
           ),
         ],
@@ -197,18 +193,69 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
     );
   }
 
-  Widget _buildSliverAppBar(Routine routine, Color priorityColor) {
+  Widget _buildPortraitLayout(Routine routine, List<Routine> allRoutines) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildCompletionSection(routine),
+        const SizedBox(height: RoutineDetailConstants.sectionSpacing),
+        _buildInfoSection(routine, allRoutines),
+        const SizedBox(height: RoutineDetailConstants.sectionSpacing),
+        _buildActionButtons(routine),
+        const SizedBox(height: 80), // 하단 여백
+      ],
+    );
+  }
+
+  Widget _buildLandscapeLayout(Routine routine, List<Routine> allRoutines) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 상단: 완료 섹션과 정보 섹션을 나란히 배치
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 1,
+              child: _buildCompletionSection(routine),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              flex: 2,
+              child: _buildInfoSection(routine, allRoutines),
+            ),
+          ],
+        ),
+        const SizedBox(height: RoutineDetailConstants.sectionSpacing),
+        // 하단: 액션 버튼들
+        _buildActionButtons(routine),
+        const SizedBox(height: 40), // 하단 여백 (가로 모드에서는 줄임)
+      ],
+    );
+  }
+
+  Widget _buildSliverAppBar(
+      Routine routine, Color priorityColor, bool isLandscape) {
+    final expandedHeight = isLandscape
+        ? RoutineDetailConstants.headerHeight * 0.7
+        : RoutineDetailConstants.headerHeight;
+
     return SliverAppBar(
-      expandedHeight: RoutineDetailConstants.headerHeight,
+      expandedHeight: expandedHeight,
       floating: false,
       pinned: true,
       backgroundColor: priorityColor,
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           routine.title,
-          style: RoutineDetailStyles.titleStyle.copyWith(fontSize: 20),
+          style: RoutineDetailStyles.titleStyle.copyWith(
+            fontSize: isLandscape ? 18 : 20,
+          ),
         ),
-        titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+        titlePadding: EdgeInsets.only(
+          left: 16,
+          bottom: isLandscape ? 12 : 16,
+        ),
         background: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -222,12 +269,12 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
           ),
           child: SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(isLandscape ? 12 : 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  const SizedBox(height: 20),
+                  SizedBox(height: isLandscape ? 16 : 20),
                   Row(
                     children: [
                       _buildCompactPriorityBadge(routine.priority),
@@ -236,11 +283,12 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
                     ],
                   ),
                   if (routine.memo?.isNotEmpty == true) ...[
-                    const SizedBox(height: 6),
+                    SizedBox(height: isLandscape ? 4 : 6),
                     Text(
                       routine.memo!,
-                      style: RoutineDetailStyles.subtitleStyle
-                          .copyWith(fontSize: 14),
+                      style: RoutineDetailStyles.subtitleStyle.copyWith(
+                        fontSize: isLandscape ? 12 : 14,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -253,12 +301,12 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.edit, color: Colors.white, size: 20),
+          icon: const Icon(Icons.edit_rounded),
           onPressed: () => _navigateToEdit(routine),
           tooltip: '수정',
         ),
         IconButton(
-          icon: const Icon(Icons.delete, color: Colors.white, size: 20),
+          icon: const Icon(Icons.delete_rounded),
           onPressed: () => _showDeleteDialog(routine),
           tooltip: '삭제',
         ),

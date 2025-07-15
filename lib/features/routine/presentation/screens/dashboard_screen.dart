@@ -37,6 +37,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('3Days - 나의 루틴'),
@@ -71,81 +76,158 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // 상단 정보
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      body: isLandscape ? _buildLandscapeLayout() : _buildPortraitLayout(),
+    );
+  }
+
+  Widget _buildPortraitLayout() {
+    return Column(
+      children: [
+        // 상단 정보
+        _buildHeaderSection(),
+        // 오늘의 루틴 섹션
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 섹션 헤더
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Text(
+                  selectedFilter == DashboardFilter.completed
+                      ? '완료된 루틴'
+                      : '오늘의 루틴',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              // 필터 칩들
+              _buildFilterChips(),
+              const SizedBox(height: 12),
+              // 루틴 리스트
+              Expanded(
+                child: _buildRoutineList(),
+              ),
+            ],
+          ),
+        ),
+        // 배너 광고
+        const SafeArea(
+          child: BannerAdWidget(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLandscapeLayout() {
+    return Row(
+      children: [
+        // 좌측 패널 (정보 섹션)
+        SizedBox(
+          width: MediaQuery.of(context).size.width * 0.35,
+          child: Column(
+            children: [
+              _buildHeaderSection(),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        selectedFilter == DashboardFilter.completed
+                            ? '완료된 루틴'
+                            : '오늘의 루틴',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildFilterChips(),
+                    ],
+                  ),
+                ),
+              ),
+              const SafeArea(
+                child: BannerAdWidget(),
+              ),
+            ],
+          ),
+        ),
+        // 우측 패널 (루틴 리스트)
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.only(left: 1),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Theme.of(context).primaryColor,
-                  Theme.of(context).primaryColor.withValues(alpha: 0.8),
-                ],
+              border: Border(
+                left: BorderSide(
+                  color: Colors.grey.shade200,
+                  width: 1,
+                ),
               ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 날짜 정보
-                Text(
-                  DateFormat('yyyy년 M월 d일 EEEE', 'ko_KR')
-                      .format(DateTime.now()),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // 썸머리 카드
-                const TodaySummaryCard(),
-              ],
+            child: _buildRoutineList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHeaderSection() {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // 가로 모드에서는 높이를 줄이고, 세로 모드에서는 기본 높이 유지
+    final headerPadding = isLandscape
+        ? const EdgeInsets.fromLTRB(20, 12, 20, 12)
+        : const EdgeInsets.fromLTRB(20, 20, 20, 20);
+
+    return Container(
+      padding: headerPadding,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).primaryColor,
+            Theme.of(context).primaryColor.withValues(alpha: 0.8),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 날짜 정보
+          Text(
+            DateFormat('yyyy년 M월 d일 EEEE', 'ko_KR').format(DateTime.now()),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: isLandscape ? 12 : 14,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          // 오늘의 루틴 섹션
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 섹션 헤더
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                  child: Text(
-                    selectedFilter == DashboardFilter.completed
-                        ? '완료된 루틴'
-                        : '오늘의 루틴',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                // 필터 칩들
-                _buildFilterChips(),
-                const SizedBox(height: 12),
-                // 루틴 리스트
-                Expanded(
-                  child: _buildRoutineList(),
-                ),
-              ],
-            ),
-          ),
-          // 배너 광고
-          const SafeArea(
-            child: BannerAdWidget(),
-          ),
+          SizedBox(height: isLandscape ? 8 : 16),
+          // 썸머리 카드
+          const TodaySummaryCard(),
         ],
       ),
     );
   }
 
   Widget _buildFilterChips() {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      height: isLandscape ? 45 : 50,
+      padding: EdgeInsets.symmetric(
+        horizontal: isLandscape ? 8 : 16,
+        vertical: isLandscape ? 4 : 8,
+      ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -204,11 +286,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     required VoidCallback onTap,
     required Color color,
   }) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.symmetric(
+          horizontal: isLandscape ? 10 : 12,
+          vertical: isLandscape ? 6 : 8,
+        ),
         decoration: BoxDecoration(
           color: isSelected ? color : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
@@ -221,7 +309,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           label,
           style: TextStyle(
             color: isSelected ? Colors.white : color,
-            fontSize: 13,
+            fontSize: isLandscape ? 12 : 13,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
@@ -230,6 +318,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildRoutineList() {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Consumer(
       builder: (context, ref, child) {
         final routineState = ref.watch(routineNotifierProvider);
@@ -364,115 +455,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     context.router.push(RoutineFormRoute());
                   }
                 },
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 완료 상태에 따른 아이콘 선택
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: hasCompletedRoutines
-                                ? Colors.green.shade50
-                                : Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(32),
-                            border: Border.all(
-                              color: hasCompletedRoutines
-                                  ? Colors.green.shade200
-                                  : Colors.grey.shade200,
-                              width: 2,
-                            ),
-                          ),
-                          child: Icon(
-                            hasCompletedRoutines
-                                ? Icons.celebration
-                                : (isCompletedFilter
-                                    ? Icons.task_alt
-                                    : Icons.add_task),
-                            size: 32,
-                            color: hasCompletedRoutines
-                                ? Colors.green.shade600
-                                : Colors.grey.shade400,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _getEmptyStateTitle(
-                              hasCompletedRoutines, isCompletedFilter),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: hasCompletedRoutines
-                                ? Colors.green.shade700
-                                : Colors.grey.shade700,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _getEmptyStateSubtitle(
-                              hasCompletedRoutines, isCompletedFilter),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: hasCompletedRoutines
-                                ? Colors.green.shade600
-                                : Colors.grey.shade600,
-                          ),
-                        ),
-                        if (hasCompletedRoutines) ...[
-                          const SizedBox(height: 16),
-                          // 완료 축하 애니메이션 효과 (크기 축소)
-                          TweenAnimationBuilder<double>(
-                            tween: Tween(begin: 0.0, end: 1.0),
-                            duration: const Duration(milliseconds: 1200),
-                            builder: (context, value, child) {
-                              return Transform.scale(
-                                scale: 0.9 + (0.1 * value),
-                                child: Opacity(
-                                  opacity: value,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.green.shade400,
-                                          Colors.green.shade600,
-                                        ],
-                                      ),
-                                      borderRadius: BorderRadius.circular(20),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.green.shade200,
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: const Text(
-                                      '🏆 완벽해요!',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+                child: _buildEmptyState(
+                  hasCompletedRoutines: hasCompletedRoutines,
+                  isCompletedFilter: isCompletedFilter,
+                  isLandscape: isLandscape,
                 ),
               );
             }
@@ -532,7 +518,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             });
 
             return ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: EdgeInsets.symmetric(
+                horizontal: isLandscape ? 12 : 20,
+                vertical: 8,
+              ),
               itemCount: filteredRoutines.length,
               separatorBuilder: (context, index) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
@@ -574,6 +563,219 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildEmptyState({
+    required bool hasCompletedRoutines,
+    required bool isCompletedFilter,
+    required bool isLandscape,
+  }) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(isLandscape ? 16 : 24),
+        child: isLandscape
+            ? _buildLandscapeEmptyState(hasCompletedRoutines, isCompletedFilter)
+            : _buildPortraitEmptyState(hasCompletedRoutines, isCompletedFilter),
+      ),
+    );
+  }
+
+  Widget _buildPortraitEmptyState(
+      bool hasCompletedRoutines, bool isCompletedFilter) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 완료 상태에 따른 아이콘 선택
+        Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            color: hasCompletedRoutines
+                ? Colors.green.shade50
+                : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: hasCompletedRoutines
+                  ? Colors.green.shade200
+                  : Colors.grey.shade200,
+              width: 2,
+            ),
+          ),
+          child: Icon(
+            hasCompletedRoutines
+                ? Icons.celebration
+                : (isCompletedFilter ? Icons.task_alt : Icons.add_task),
+            size: 32,
+            color: hasCompletedRoutines
+                ? Colors.green.shade600
+                : Colors.grey.shade400,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          _getEmptyStateTitle(hasCompletedRoutines, isCompletedFilter),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: hasCompletedRoutines
+                ? Colors.green.shade700
+                : Colors.grey.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          _getEmptyStateSubtitle(hasCompletedRoutines, isCompletedFilter),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 14,
+            color: hasCompletedRoutines
+                ? Colors.green.shade600
+                : Colors.grey.shade600,
+          ),
+        ),
+        if (hasCompletedRoutines) ...[
+          const SizedBox(height: 16),
+          // 완료 축하 애니메이션 효과 (크기 축소)
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 1200),
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: 0.9 + (0.1 * value),
+                child: Opacity(
+                  opacity: value,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.green.shade400,
+                          Colors.green.shade600,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.shade200,
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Text(
+                      '🏆 완벽해요!',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildLandscapeEmptyState(
+      bool hasCompletedRoutines, bool isCompletedFilter) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 좌측 아이콘
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: hasCompletedRoutines
+                ? Colors.green.shade50
+                : Colors.grey.shade50,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: hasCompletedRoutines
+                  ? Colors.green.shade200
+                  : Colors.grey.shade200,
+              width: 2,
+            ),
+          ),
+          child: Icon(
+            hasCompletedRoutines
+                ? Icons.celebration
+                : (isCompletedFilter ? Icons.task_alt : Icons.add_task),
+            size: 24,
+            color: hasCompletedRoutines
+                ? Colors.green.shade600
+                : Colors.grey.shade400,
+          ),
+        ),
+        const SizedBox(width: 16),
+        // 우측 텍스트
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _getEmptyStateTitle(hasCompletedRoutines, isCompletedFilter),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: hasCompletedRoutines
+                      ? Colors.green.shade700
+                      : Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _getEmptyStateSubtitle(hasCompletedRoutines, isCompletedFilter),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: hasCompletedRoutines
+                      ? Colors.green.shade600
+                      : Colors.grey.shade600,
+                ),
+              ),
+              if (hasCompletedRoutines) ...[
+                const SizedBox(height: 12),
+                // 완료 축하 메시지
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.green.shade400,
+                        Colors.green.shade600,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Text(
+                    '🏆 완벽해요!',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 

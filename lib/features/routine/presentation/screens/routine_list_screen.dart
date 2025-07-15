@@ -83,6 +83,8 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
   @override
   Widget build(BuildContext context) {
     final routineState = ref.watch(routineNotifierProvider);
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Scaffold(
       appBar: AppBar(
@@ -129,13 +131,13 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
           // 진행중 탭
           Column(
             children: [
-              _buildPriorityFilterChips(),
+              _buildPriorityFilterChips(isLandscape),
               Expanded(
                 child: routineState.when(
                   initial: () => _buildInitialState(context),
                   loading: () => _buildLoadingState(context),
-                  loaded: (routines) =>
-                      _buildActiveRoutineList(context, ref, routines),
+                  loaded: (routines) => _buildActiveRoutineList(
+                      context, ref, routines, isLandscape),
                   error: (message) => _buildErrorState(context, message, ref),
                 ),
               ),
@@ -144,13 +146,13 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
           // 완료됨 탭
           Column(
             children: [
-              _buildHistoryFilterChips(),
+              _buildHistoryFilterChips(isLandscape),
               Expanded(
                 child: routineState.when(
                   initial: () => _buildInitialState(context),
                   loading: () => _buildLoadingState(context),
-                  loaded: (routines) =>
-                      _buildCompletedRoutineList(context, ref, routines),
+                  loaded: (routines) => _buildCompletedRoutineList(
+                      context, ref, routines, isLandscape),
                   error: (message) => _buildErrorState(context, message, ref),
                 ),
               ),
@@ -158,166 +160,200 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          await context.router.push(RoutineFormRoute());
-          ref.read(routineNotifierProvider.notifier).refreshRoutines();
-        },
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('루틴 추가'),
-        tooltip: '새 루틴 추가',
-      ),
+      floatingActionButton: isLandscape
+          ? null // 가로 모드에서는 FAB 숨김
+          : FloatingActionButton.extended(
+              onPressed: () async {
+                await context.router.push(RoutineFormRoute());
+                ref.read(routineNotifierProvider.notifier).refreshRoutines();
+              },
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('루틴 추가'),
+              tooltip: '새 루틴 추가',
+            ),
     );
   }
 
-  Widget _buildPriorityFilterChips() {
+  Widget _buildPriorityFilterChips(bool isLandscape) {
     return Container(
-      height: RoutineListScreenConstants.filterChipHeight,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            // 전체 필터
-            _buildFilterChip(
-              label: '전체',
-              isSelected: selectedPriority == null,
-              onTap: () => setState(() => selectedPriority = null),
-              color: Colors.grey,
-            ),
-            const SizedBox(width: 8),
-            // 긴급 필터
-            _buildFilterChip(
-              label: '긴급',
-              isSelected: selectedPriority == Priority.high,
-              onTap: () => setState(() => selectedPriority = Priority.high),
-              color: getPriorityBorderColor(Priority.high),
-            ),
-            const SizedBox(width: 8),
-            // 중요 필터
-            _buildFilterChip(
-              label: '중요',
-              isSelected: selectedPriority == Priority.medium,
-              onTap: () => setState(() => selectedPriority = Priority.medium),
-              color: getPriorityBorderColor(Priority.medium),
-            ),
-            const SizedBox(width: 8),
-            // 여유 필터
-            _buildFilterChip(
-              label: '여유',
-              isSelected: selectedPriority == Priority.low,
-              onTap: () => setState(() => selectedPriority = Priority.low),
-              color: getPriorityBorderColor(Priority.low),
-            ),
-          ],
-        ),
+      height: isLandscape ? 45 : RoutineListScreenConstants.filterChipHeight,
+      padding: EdgeInsets.symmetric(
+        horizontal: isLandscape ? 12 : 16,
+        vertical: isLandscape ? 4 : 8,
       ),
-    );
-  }
-
-  Widget _buildHistoryFilterChips() {
-    return Container(
-      height: RoutineListScreenConstants.filterChipHeight,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            // 오늘
-            _buildHistoryFilterChip(
-              label: '오늘',
-              filter: CompletionHistoryFilter.today,
-              icon: Icons.today,
-              color: Colors.blue,
-            ),
-            const SizedBox(width: 8),
-            // 어제
-            _buildHistoryFilterChip(
-              label: '어제',
-              filter: CompletionHistoryFilter.yesterday,
-              icon: Icons.history,
-              color: Colors.green,
-            ),
-            const SizedBox(width: 8),
-            // 이번 주
-            _buildHistoryFilterChip(
-              label: '이번 주',
-              filter: CompletionHistoryFilter.thisWeek,
-              icon: Icons.view_week,
-              color: Colors.orange,
-            ),
-            const SizedBox(width: 8),
-            // 이번 달
-            _buildHistoryFilterChip(
-              label: '이번 달',
-              filter: CompletionHistoryFilter.thisMonth,
-              icon: Icons.calendar_month,
-              color: Colors.purple,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHistoryFilterChip({
-    required String label,
-    required CompletionHistoryFilter filter,
-    required IconData icon,
-    required Color color,
-  }) {
-    final isSelected = selectedHistoryFilter == filter;
-
-    return GestureDetector(
-      onTap: () => setState(() => selectedHistoryFilter = filter),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? color : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? color : color.withValues(alpha: 0.3),
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: isSelected ? Colors.white : color,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : color,
-                fontSize: 13,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+      child: Row(
+        children: [
+          // 가로 모드에서는 루틴 추가 버튼 추가
+          if (isLandscape) ...[
+            ElevatedButton.icon(
+              onPressed: () async {
+                await context.router.push(RoutineFormRoute());
+                ref.read(routineNotifierProvider.notifier).refreshRoutines();
+              },
+              icon: const Icon(Icons.add_rounded, size: 16),
+              label: const Text('추가', style: TextStyle(fontSize: 12)),
+              style: ElevatedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                minimumSize: const Size(0, 32),
               ),
             ),
+            const SizedBox(width: 12),
           ],
-        ),
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip(
+                    context,
+                    label: '전체',
+                    isSelected: selectedPriority == null,
+                    onTap: () => setState(() => selectedPriority = null),
+                    color: Colors.grey.shade600,
+                    isLandscape: isLandscape,
+                  ),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(
+                    context,
+                    label: '긴급',
+                    isSelected: selectedPriority == Priority.high,
+                    onTap: () =>
+                        setState(() => selectedPriority = Priority.high),
+                    color: getPriorityBorderColor(Priority.high),
+                    isLandscape: isLandscape,
+                  ),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(
+                    context,
+                    label: '중요',
+                    isSelected: selectedPriority == Priority.medium,
+                    onTap: () =>
+                        setState(() => selectedPriority = Priority.medium),
+                    color: getPriorityBorderColor(Priority.medium),
+                    isLandscape: isLandscape,
+                  ),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(
+                    context,
+                    label: '여유',
+                    isSelected: selectedPriority == Priority.low,
+                    onTap: () =>
+                        setState(() => selectedPriority = Priority.low),
+                    color: getPriorityBorderColor(Priority.low),
+                    isLandscape: isLandscape,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildFilterChip({
+  Widget _buildHistoryFilterChips(bool isLandscape) {
+    return Container(
+      height: isLandscape ? 45 : RoutineListScreenConstants.filterChipHeight,
+      padding: EdgeInsets.symmetric(
+        horizontal: isLandscape ? 12 : 16,
+        vertical: isLandscape ? 4 : 8,
+      ),
+      child: Row(
+        children: [
+          // 가로 모드에서는 루틴 추가 버튼 추가
+          if (isLandscape) ...[
+            ElevatedButton.icon(
+              onPressed: () async {
+                await context.router.push(RoutineFormRoute());
+                ref.read(routineNotifierProvider.notifier).refreshRoutines();
+              },
+              icon: const Icon(Icons.add_rounded, size: 16),
+              label: const Text('추가', style: TextStyle(fontSize: 12)),
+              style: ElevatedButton.styleFrom(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                minimumSize: const Size(0, 32),
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip(
+                    context,
+                    label: '오늘',
+                    isSelected:
+                        selectedHistoryFilter == CompletionHistoryFilter.today,
+                    onTap: () => setState(() =>
+                        selectedHistoryFilter = CompletionHistoryFilter.today),
+                    color: Colors.blue.shade600,
+                    isLandscape: isLandscape,
+                  ),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(
+                    context,
+                    label: '어제',
+                    isSelected: selectedHistoryFilter ==
+                        CompletionHistoryFilter.yesterday,
+                    onTap: () => setState(() => selectedHistoryFilter =
+                        CompletionHistoryFilter.yesterday),
+                    color: Colors.indigo.shade600,
+                    isLandscape: isLandscape,
+                  ),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(
+                    context,
+                    label: '이번 주',
+                    isSelected: selectedHistoryFilter ==
+                        CompletionHistoryFilter.thisWeek,
+                    onTap: () => setState(() => selectedHistoryFilter =
+                        CompletionHistoryFilter.thisWeek),
+                    color: Colors.purple.shade600,
+                    isLandscape: isLandscape,
+                  ),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(
+                    context,
+                    label: '이번 달',
+                    isSelected: selectedHistoryFilter ==
+                        CompletionHistoryFilter.thisMonth,
+                    onTap: () => setState(() => selectedHistoryFilter =
+                        CompletionHistoryFilter.thisMonth),
+                    color: Colors.green.shade600,
+                    isLandscape: isLandscape,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(
+    BuildContext context, {
     required String label,
     required bool isSelected,
     required VoidCallback onTap,
     required Color color,
+    required bool isLandscape,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(
+          horizontal: isLandscape ? 10 : 12,
+          vertical: isLandscape ? 6 : 8,
+        ),
         decoration: BoxDecoration(
           color: isSelected ? color : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? color : color.withValues(alpha: 0.3),
             width: 1.5,
@@ -327,7 +363,7 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
           label,
           style: TextStyle(
             color: isSelected ? Colors.white : color,
-            fontSize: 13,
+            fontSize: isLandscape ? 12 : 13,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
@@ -545,7 +581,11 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
   }
 
   Widget _buildActiveRoutineList(
-      BuildContext context, WidgetRef ref, List<Routine> routines) {
+    BuildContext context,
+    WidgetRef ref,
+    List<Routine> routines,
+    bool isLandscape,
+  ) {
     // 진행중인 루틴만 필터링 (완료되지 않은 활성 루틴)
     var activeRoutines = routines
         .where(
@@ -667,7 +707,11 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
   }
 
   Widget _buildCompletedRoutineList(
-      BuildContext context, WidgetRef ref, List<Routine> routines) {
+    BuildContext context,
+    WidgetRef ref,
+    List<Routine> routines,
+    bool isLandscape,
+  ) {
     // 완료된 루틴들을 히스토리 필터에 따라 필터링
     final completedRoutines = _getCompletedRoutinesByFilter(routines);
 

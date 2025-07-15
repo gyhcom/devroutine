@@ -230,6 +230,8 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
   @override
   Widget build(BuildContext context) {
     final routineState = ref.watch(routineNotifierProvider);
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return AnimatedBuilder(
       animation: _animationController,
@@ -245,11 +247,14 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
                     SummaryCardConstants.cardBorderRadius),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(SummaryCardConstants.cardPadding),
+                padding: EdgeInsets.all(isLandscape
+                    ? SummaryCardConstants.cardPadding * 0.8
+                    : SummaryCardConstants.cardPadding),
                 child: routineState.maybeWhen(
-                  loaded: (routines) => _buildLoadedContent(context, routines),
-                  loading: () => _buildLoadingState(),
-                  orElse: () => _buildEmptyState(),
+                  loaded: (routines) =>
+                      _buildLoadedContent(context, routines, isLandscape),
+                  loading: () => _buildLoadingState(isLandscape),
+                  orElse: () => _buildEmptyState(isLandscape),
                 ),
               ),
             ),
@@ -259,105 +264,225 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
     );
   }
 
-  Widget _buildLoadingState() {
+  Widget _buildLoadingState(bool isLandscape) {
     return SizedBox(
-      height: 80,
+      height: isLandscape ? 60 : 80,
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor:
-                  AlwaysStoppedAnimation(Theme.of(context).primaryColor),
-            ),
-            const SizedBox(height: SummaryCardConstants.smallSpacing),
-            Text(
-              '현황 확인 중...',
-              style: SummaryCardStyles.subtitleStyle,
-            ),
-          ],
-        ),
+        child: isLandscape
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(
+                          Theme.of(context).primaryColor),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '현황 확인 중...',
+                    style:
+                        SummaryCardStyles.subtitleStyle.copyWith(fontSize: 11),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor:
+                        AlwaysStoppedAnimation(Theme.of(context).primaryColor),
+                  ),
+                  const SizedBox(height: SummaryCardConstants.smallSpacing),
+                  Text(
+                    '현황 확인 중...',
+                    style: SummaryCardStyles.subtitleStyle,
+                  ),
+                ],
+              ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(bool isLandscape) {
     return GestureDetector(
       onTap: () {
         context.router.push(RoutineFormRoute());
       },
       child: SizedBox(
-        height: 80,
+        height: isLandscape ? 60 : 80,
         child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.today_outlined,
-                size: 32,
-                color: Colors.grey.shade400,
-              ),
-              const SizedBox(height: SummaryCardConstants.smallSpacing),
-              Text(
-                '오늘 할 루틴을 추가해보세요',
-                style: SummaryCardStyles.subtitleStyle,
-              ),
-            ],
-          ),
+          child: isLandscape
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.today_outlined,
+                      size: 20,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '오늘 할 루틴을 추가해보세요',
+                      style: SummaryCardStyles.subtitleStyle
+                          .copyWith(fontSize: 11),
+                    ),
+                  ],
+                )
+              : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.today_outlined,
+                      size: 32,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: SummaryCardConstants.smallSpacing),
+                    Text(
+                      '오늘 할 루틴을 추가해보세요',
+                      style: SummaryCardStyles.subtitleStyle,
+                    ),
+                  ],
+                ),
         ),
       ),
     );
   }
 
-  Widget _buildLoadedContent(BuildContext context, List<Routine> routines) {
+  Widget _buildLoadedContent(
+      BuildContext context, List<Routine> routines, bool isLandscape) {
     final todayAnalysis = _analyzeTodayRoutines(routines);
     final progressData = _calculateProgress(context, todayAnalysis);
 
     if (progressData.isEmpty) {
-      return _buildEmptyState();
+      return _buildEmptyState(isLandscape);
     }
 
+    return isLandscape
+        ? _buildLandscapeLayout(progressData, todayAnalysis)
+        : _buildPortraitLayout(progressData, todayAnalysis);
+  }
+
+  Widget _buildPortraitLayout(
+      ProgressData progressData, TodayAnalysis todayAnalysis) {
     return Column(
       children: [
-        _buildQuickStats(progressData),
+        _buildQuickStats(progressData, false),
         const SizedBox(height: SummaryCardConstants.smallSpacing),
-        _buildPriorityBreakdown(todayAnalysis),
+        _buildPriorityBreakdown(todayAnalysis, false),
         const SizedBox(height: SummaryCardConstants.mediumSpacing),
-        _buildProgressSection(progressData),
+        _buildProgressSection(progressData, false),
       ],
     );
   }
 
-  Widget _buildQuickStats(ProgressData progressData) {
+  Widget _buildLandscapeLayout(
+      ProgressData progressData, TodayAnalysis todayAnalysis) {
+    return Row(
+      children: [
+        // 좌측: 빠른 통계
+        Expanded(
+          flex: 2,
+          child: _buildQuickStats(progressData, true),
+        ),
+        const SizedBox(width: SummaryCardConstants.mediumSpacing),
+        // 우측: 진행률과 우선순위
+        Expanded(
+          flex: 3,
+          child: Column(
+            children: [
+              _buildProgressSection(progressData, true),
+              const SizedBox(height: SummaryCardConstants.smallSpacing),
+              _buildPriorityBreakdown(todayAnalysis, true),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickStats(ProgressData progressData, bool isLandscape) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // 다크 모드에서는 밝은 슬레이트 블루, 라이트 모드에서는 인디고
     final todayTaskColor =
         isDark ? const Color(0xFF6366F1) : Colors.indigo.shade600;
 
+    return isLandscape
+        ? Column(
+            children: [
+              _buildCompactStatItem(
+                icon: Icons.assignment_outlined,
+                label: '할 일',
+                value: progressData.totalTasks.toString(),
+                color: todayTaskColor,
+              ),
+              const SizedBox(height: SummaryCardConstants.smallSpacing),
+              _buildCompactStatItem(
+                icon: Icons.check_circle_outline,
+                label: '완료',
+                value: progressData.completedTasks.toString(),
+                color: progressData.color,
+              ),
+            ],
+          )
+        : Row(
+            children: [
+              Expanded(
+                child: _buildStatItem(
+                  icon: Icons.assignment_outlined,
+                  label: '오늘의 할 일',
+                  value: progressData.totalTasks.toString(),
+                  color: todayTaskColor,
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 50,
+                color: Colors.grey.shade300,
+                margin: const EdgeInsets.symmetric(
+                    horizontal: SummaryCardConstants.mediumSpacing),
+              ),
+              Expanded(
+                child: _buildStatItem(
+                  icon: Icons.check_circle_outline,
+                  label: '완료',
+                  value: progressData.completedTasks.toString(),
+                  color: progressData.color,
+                ),
+              ),
+            ],
+          );
+  }
+
+  Widget _buildCompactStatItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
     return Row(
       children: [
-        Expanded(
-          child: _buildStatItem(
-            icon: Icons.assignment_outlined,
-            label: '오늘의 할 일',
-            value: progressData.totalTasks.toString(),
-            color: todayTaskColor, // WCAG 준수 다크 모드 색상
+        Icon(icon, color: color, size: 16),
+        const SizedBox(width: SummaryCardConstants.smallSpacing),
+        Text(
+          label,
+          style: SummaryCardStyles.labelStyle.copyWith(
+            fontSize: 10,
+            color: Colors.grey.shade700,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        Container(
-          width: 1,
-          height: 50,
-          color: Colors.grey.shade300,
-          margin: const EdgeInsets.symmetric(
-              horizontal: SummaryCardConstants.mediumSpacing),
-        ),
-        Expanded(
-          child: _buildStatItem(
-            icon: Icons.check_circle_outline,
-            label: '완료',
-            value: progressData.completedTasks.toString(),
-            color: progressData.color,
+        const Spacer(),
+        Text(
+          value,
+          style: SummaryCardStyles.valueStyle.copyWith(
+            fontSize: 16,
+            color: color,
+            fontWeight: FontWeight.w800,
           ),
         ),
       ],
@@ -392,7 +517,7 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
     );
   }
 
-  Widget _buildProgressSection(ProgressData progressData) {
+  Widget _buildProgressSection(ProgressData progressData, bool isLandscape) {
     return Column(
       children: [
         Row(
@@ -400,19 +525,22 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
           children: [
             Text(
               '${progressData.progress.toStringAsFixed(0)}% 완료',
-              style:
-                  SummaryCardStyles.progressTextStyle(progressData.textColor),
+              style: SummaryCardStyles.progressTextStyle(progressData.textColor)
+                  .copyWith(
+                fontSize: isLandscape ? 12 : 14,
+              ),
             ),
             Text(
               progressData.message,
               style: SummaryCardStyles.subtitleStyle.copyWith(
+                fontSize: isLandscape ? 10 : 12,
                 color: progressData.color,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ],
         ),
-        const SizedBox(height: SummaryCardConstants.mediumSpacing),
+        SizedBox(height: isLandscape ? 6 : SummaryCardConstants.mediumSpacing),
         ClipRRect(
           borderRadius: BorderRadius.circular(
               SummaryCardConstants.progressBarBorderRadius),
@@ -420,7 +548,7 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
             value: progressData.progress / 100,
             backgroundColor: Colors.grey.shade200,
             valueColor: AlwaysStoppedAnimation<Color>(progressData.color),
-            minHeight: SummaryCardConstants.progressBarHeight,
+            minHeight: isLandscape ? 4 : SummaryCardConstants.progressBarHeight,
           ),
         ),
       ],
@@ -568,7 +696,7 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
     );
   }
 
-  Widget _buildPriorityBreakdown(TodayAnalysis analysis) {
+  Widget _buildPriorityBreakdown(TodayAnalysis analysis, bool isLandscape) {
     // 오늘의 모든 루틴을 가져오기
     final allTodayRoutines = <Routine>[];
 
@@ -620,7 +748,7 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
 
       if (count > 0) {
         priorityItems.add(
-          _buildPriorityItem(priority, completed, count),
+          _buildPriorityItem(priority, completed, count, isLandscape),
         );
       }
     }
@@ -630,9 +758,9 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(
+      padding: EdgeInsets.symmetric(
         horizontal: SummaryCardConstants.mediumSpacing,
-        vertical: SummaryCardConstants.smallSpacing,
+        vertical: isLandscape ? 4 : SummaryCardConstants.smallSpacing,
       ),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
@@ -640,37 +768,62 @@ class _TodaySummaryCardState extends ConsumerState<TodaySummaryCard>
             BorderRadius.circular(SummaryCardConstants.itemBorderRadius),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: priorityItems,
-      ),
+      child: isLandscape
+          ? Column(
+              children: priorityItems
+                  .map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: item,
+                    ),
+                  )
+                  .toList(),
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: priorityItems,
+            ),
     );
   }
 
-  Widget _buildPriorityItem(Priority priority, int completed, int total) {
+  Widget _buildPriorityItem(
+      Priority priority, int completed, int total, bool isLandscape) {
     final color = getPriorityTextColor(priority);
     final label = getPriorityLabel(priority);
     final icon = getPriorityIcon(priority);
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: isLandscape ? MainAxisSize.max : MainAxisSize.min,
       children: [
         Icon(
           icon,
-          size: 12,
+          size: isLandscape ? 10 : 12,
           color: color,
         ),
-        const SizedBox(width: 4),
+        SizedBox(width: isLandscape ? 6 : 4),
+        if (isLandscape) ...[
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+          const Spacer(),
+        ],
         RichText(
           text: TextSpan(
             style: TextStyle(
-              fontSize: 11,
+              fontSize: isLandscape ? 10 : 11,
               fontWeight: FontWeight.w600,
               color: color,
             ),
             children: [
-              TextSpan(text: label),
-              const TextSpan(text: ' '),
+              if (!isLandscape) ...[
+                TextSpan(text: label),
+                const TextSpan(text: ' '),
+              ],
               TextSpan(
                 text: '$completed/$total',
                 style: TextStyle(

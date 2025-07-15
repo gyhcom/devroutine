@@ -40,6 +40,9 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.routine == null ? '새 루틴' : '루틴 수정'),
@@ -56,183 +59,273 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: '오늘의 할 일',
-                hintText: '예) 알고리즘 문제 1개 풀기',
-                border: OutlineInputBorder(),
-              ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return '할 일을 입력해주세요';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _memoController,
-              decoration: const InputDecoration(
-                labelText: '메모 (선택사항)',
-                hintText: '추가 메모를 입력하세요',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 16),
+        child: isLandscape ? _buildLandscapeLayout() : _buildPortraitLayout(),
+      ),
+    );
+  }
 
-            // 루틴 타입 선택
-            Card(
-              elevation: 0,
-              color: Colors.grey.shade100,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '루틴 타입',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Colors.black87),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildRoutineTypeOption(
-                            title: '일일 루틴',
-                            description: '매일 리셋',
-                            icon: Icons.refresh,
-                            color: Colors.teal,
-                            isSelected: _routineType == RoutineType.daily,
-                            onTap: () => setState(() {
-                              _routineType = RoutineType.daily;
-                            }),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildRoutineTypeOption(
-                            title: '3일 루틴',
-                            description: '3개 루틴 생성',
-                            icon: Icons.calendar_today,
-                            color: Colors.blue,
-                            isSelected: _routineType == RoutineType.threeDay,
-                            onTap: () => setState(() {
-                              _routineType = RoutineType.threeDay;
-                            }),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+  Widget _buildPortraitLayout() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        TextFormField(
+          controller: _titleController,
+          decoration: const InputDecoration(
+            labelText: '오늘의 할 일',
+            hintText: '예) 알고리즘 문제 1개 풀기',
+            border: OutlineInputBorder(),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return '할 일을 입력해주세요';
+            }
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
+        TextFormField(
+          controller: _memoController,
+          decoration: const InputDecoration(
+            labelText: '메모 (선택사항)',
+            hintText: '추가 메모를 입력하세요',
+            border: OutlineInputBorder(),
+          ),
+          maxLines: 3,
+        ),
+        const SizedBox(height: 16),
+        _buildRoutineTypeSection(),
+        const SizedBox(height: 16),
+        _buildPriorityDropdown(),
+        const SizedBox(height: 24),
+        _buildSubmitButton(),
+        if (widget.routine != null) ...[
+          const SizedBox(height: 16),
+          _buildDeleteButton(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildLandscapeLayout() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          // 상단: 텍스트 필드들
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _titleController,
+                  decoration: const InputDecoration(
+                    labelText: '오늘의 할 일',
+                    hintText: '예) 알고리즘 문제 1개 풀기',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return '할 일을 입력해주세요';
+                    }
+                    return null;
+                  },
                 ),
               ),
-            ),
-
-            const SizedBox(height: 16),
-            DropdownButtonFormField<Priority>(
-              value: _priority,
-              decoration: const InputDecoration(
-                labelText: '우선순위',
-                border: OutlineInputBorder(),
-              ),
-              items: Priority.values.map((priority) {
-                String label;
-                IconData icon;
-                Color color;
-                switch (priority) {
-                  case Priority.high:
-                    label = '높음';
-                    icon = Icons.priority_high;
-                    color = Colors.red;
-                    break;
-                  case Priority.medium:
-                    label = '보통';
-                    icon = Icons.remove;
-                    color = Colors.orange;
-                    break;
-                  case Priority.low:
-                    label = '낮음';
-                    icon = Icons.arrow_downward;
-                    color = Colors.green;
-                    break;
-                }
-                return DropdownMenuItem(
-                  value: priority,
-                  child: Row(
-                    children: [
-                      Icon(icon, color: color),
-                      const SizedBox(width: 8),
-                      Text(label),
-                    ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: TextFormField(
+                  controller: _memoController,
+                  decoration: const InputDecoration(
+                    labelText: '메모 (선택사항)',
+                    hintText: '추가 메모를 입력하세요',
+                    border: OutlineInputBorder(),
                   ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _priority = value;
-                  });
-                }
-              },
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _saveRoutine,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    widget.routine == null ? Icons.add : Icons.edit,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    widget.routine == null ? '루틴 생성' : '루틴 수정',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ],
-              ),
-            ),
-
-            // 기존 루틴 수정 시에만 삭제 버튼 표시
-            if (widget.routine != null) ...[
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: _showDeleteConfirmation,
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  side: BorderSide(color: Colors.red.shade400),
-                  foregroundColor: Colors.red.shade600,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.delete_outline, size: 20),
-                    const SizedBox(width: 8),
-                    const Text(
-                      '루틴 삭제',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ],
+                  maxLines: 3,
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          // 중간: 루틴 타입과 우선순위
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: _buildRoutineTypeSection(),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 1,
+                child: _buildPriorityDropdown(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // 하단: 버튼들
+          Row(
+            children: [
+              Expanded(
+                child: _buildSubmitButton(),
+              ),
+              if (widget.routine != null) ...[
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildDeleteButton(),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoutineTypeSection() {
+    return Card(
+      elevation: 0,
+      color: Colors.grey.shade100,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '루틴 타입',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Colors.black87),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildRoutineTypeOption(
+                    title: '일일 루틴',
+                    description: '매일 리셋',
+                    icon: Icons.refresh,
+                    color: Colors.teal,
+                    isSelected: _routineType == RoutineType.daily,
+                    onTap: () => setState(() {
+                      _routineType = RoutineType.daily;
+                    }),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildRoutineTypeOption(
+                    title: '3일 루틴',
+                    description: '3개 루틴 생성',
+                    icon: Icons.calendar_today,
+                    color: Colors.blue,
+                    isSelected: _routineType == RoutineType.threeDay,
+                    onTap: () => setState(() {
+                      _routineType = RoutineType.threeDay;
+                    }),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildPriorityDropdown() {
+    return DropdownButtonFormField<Priority>(
+      value: _priority,
+      decoration: const InputDecoration(
+        labelText: '우선순위',
+        border: OutlineInputBorder(),
+      ),
+      items: Priority.values.map((priority) {
+        String label;
+        IconData icon;
+        Color color;
+        switch (priority) {
+          case Priority.high:
+            label = '높음';
+            icon = Icons.priority_high;
+            color = Colors.red;
+            break;
+          case Priority.medium:
+            label = '보통';
+            icon = Icons.remove;
+            color = Colors.orange;
+            break;
+          case Priority.low:
+            label = '낮음';
+            icon = Icons.arrow_downward;
+            color = Colors.green;
+            break;
+        }
+        return DropdownMenuItem(
+          value: priority,
+          child: Row(
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(width: 8),
+              Text(label),
+            ],
+          ),
+        );
+      }).toList(),
+      onChanged: (value) {
+        if (value != null) {
+          setState(() {
+            _priority = value;
+          });
+        }
+      },
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    return ElevatedButton(
+      onPressed: _saveRoutine,
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            widget.routine == null ? Icons.add : Icons.edit,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            widget.routine == null ? '루틴 생성' : '루틴 수정',
+            style: const TextStyle(fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeleteButton() {
+    return OutlinedButton(
+      onPressed: _showDeleteConfirmation,
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        side: BorderSide(color: Colors.red.shade400),
+        foregroundColor: Colors.red.shade600,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.delete_outline, size: 20),
+          const SizedBox(width: 8),
+          const Text(
+            '루틴 삭제',
+            style: TextStyle(fontSize: 16),
+          ),
+        ],
       ),
     );
   }
@@ -265,11 +358,13 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
               children: [
                 Icon(icon, color: color, size: 20),
                 const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: color,
+                Flexible(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
                   ),
                 ),
               ],
