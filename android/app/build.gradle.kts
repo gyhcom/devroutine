@@ -22,7 +22,7 @@ android {
 
     defaultConfig {
         applicationId = "com.gyhmac.devroutine"
-        minSdk = flutter.minSdkVersion
+        minSdk = 23 // Google Mobile Ads 요구사항
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
