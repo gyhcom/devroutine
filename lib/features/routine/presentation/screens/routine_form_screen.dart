@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/routine.dart';
 import '../providers/routine_provider.dart';
+import '../../../../core/widgets/banner_ad_widget.dart';
 
 @RoutePage()
 class RoutineFormScreen extends ConsumerStatefulWidget {
@@ -40,26 +41,40 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLandscape =
-        MediaQuery.of(context).orientation == Orientation.landscape;
+    final orientation = MediaQuery.of(context).orientation;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.routine == null ? '새 루틴' : '루틴 수정'),
-        actions: [
-          // 기존 루틴 수정 시에만 삭제 버튼 표시
-          if (widget.routine != null) ...[
-            IconButton(
-              icon: const Icon(Icons.delete, color: Colors.red),
-              onPressed: _showDeleteConfirmation,
-              tooltip: '루틴 삭제',
-            ),
-          ],
-        ],
+        title: Text(
+          widget.routine == null ? '새 루틴' : '루틴 수정',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: const Color(0xFF2188FF),
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
       ),
-      body: Form(
-        key: _formKey,
-        child: isLandscape ? _buildLandscapeLayout() : _buildPortraitLayout(),
+      body: Column(
+        children: [
+          Expanded(
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: orientation == Orientation.landscape
+                    ? _buildLandscapeLayout()
+                    : _buildPortraitLayout(),
+              ),
+            ),
+          ),
+          // 광고 배너 추가
+          Container(
+            color: Colors.grey.shade100,
+            child: const BannerAdWidget(),
+          ),
+        ],
       ),
     );
   }

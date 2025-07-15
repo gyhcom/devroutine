@@ -8,6 +8,7 @@ import '../../../../core/routing/app_router.dart';
 import '../../domain/entities/routine.dart';
 import '../providers/routine_provider.dart';
 import '../widgets/routine_list_item.dart';
+import '../../../../core/widgets/banner_ad_widget.dart';
 
 // 완료 히스토리 필터 enum
 enum CompletionHistoryFilter {
@@ -125,38 +126,51 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen>
           indicatorSize: TabBarIndicatorSize.label,
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          // 진행중 탭
-          Column(
-            children: [
-              _buildPriorityFilterChips(isLandscape),
-              Expanded(
-                child: routineState.when(
-                  initial: () => _buildInitialState(context),
-                  loading: () => _buildLoadingState(context),
-                  loaded: (routines) => _buildActiveRoutineList(
-                      context, ref, routines, isLandscape),
-                  error: (message) => _buildErrorState(context, message, ref),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                // 진행중 탭
+                Column(
+                  children: [
+                    _buildPriorityFilterChips(isLandscape),
+                    Expanded(
+                      child: routineState.when(
+                        initial: () => _buildInitialState(context),
+                        loading: () => _buildLoadingState(context),
+                        loaded: (routines) => _buildActiveRoutineList(
+                            context, ref, routines, isLandscape),
+                        error: (message) =>
+                            _buildErrorState(context, message, ref),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+                // 완료됨 탭
+                Column(
+                  children: [
+                    _buildHistoryFilterChips(isLandscape),
+                    Expanded(
+                      child: routineState.when(
+                        initial: () => _buildInitialState(context),
+                        loading: () => _buildLoadingState(context),
+                        loaded: (routines) => _buildCompletedRoutineList(
+                            context, ref, routines, isLandscape),
+                        error: (message) =>
+                            _buildErrorState(context, message, ref),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          // 완료됨 탭
-          Column(
-            children: [
-              _buildHistoryFilterChips(isLandscape),
-              Expanded(
-                child: routineState.when(
-                  initial: () => _buildInitialState(context),
-                  loading: () => _buildLoadingState(context),
-                  loaded: (routines) => _buildCompletedRoutineList(
-                      context, ref, routines, isLandscape),
-                  error: (message) => _buildErrorState(context, message, ref),
-                ),
-              ),
-            ],
+          // 광고 배너 추가
+          Container(
+            color: Colors.grey.shade100,
+            child: const BannerAdWidget(),
           ),
         ],
       ),

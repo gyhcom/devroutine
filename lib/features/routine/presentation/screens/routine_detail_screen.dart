@@ -8,6 +8,7 @@ import '../providers/routine_provider.dart';
 import '../utils/priority_color_util.dart';
 import '../widgets/flush_message.dart';
 import '../../../../core/routing/app_router.dart';
+import '../../../../core/widgets/banner_ad_widget.dart';
 
 // 상수 클래스
 class RoutineDetailConstants {
@@ -187,6 +188,11 @@ class _RoutineDetailScreenState extends ConsumerState<RoutineDetailScreen>
                   ? _buildLandscapeLayout(routine, allRoutines)
                   : _buildPortraitLayout(routine, allRoutines),
             ),
+          ),
+          // 광고 배너 추가
+          Container(
+            color: Colors.grey.shade100,
+            child: const BannerAdWidget(),
           ),
         ],
       ),
