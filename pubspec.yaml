@@ -52,6 +52,7 @@ dependencies:
   timezone: ^0.9.4
 
   # Firebase 제거 - 개인용 로컬 앱에서는 불필요함
+  url_launcher: ^6.2.4
 
 dev_dependencies:
   flutter_test:
