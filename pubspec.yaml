@@ -3,7 +3,7 @@ description: "3일 챌린지와 일일 루틴으로 습관을 만들어가는 �
 
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.0+2
 
 environment:
   sdk: '>=3.2.3 <4.0.0'
@@ -53,6 +53,9 @@ dependencies:
 
   # Firebase 제거 - 개인용 로컬 앱에서는 불필요함
   url_launcher: ^6.2.4
+  
+  # 메시지 알림
+  another_flushbar: ^1.10.29
 
 dev_dependencies:
   flutter_test:
@@ -70,11 +73,9 @@ dev_dependencies:
   riverpod_lint: ^2.3.9
 
   # 기타
-  another_flushbar: ^1.10.29
 
   hive_generator: ^2.0.1
   flutter_launcher_icons: ^0.13.1
-  flutter_native_splash: ^2.4.1
 
 flutter:
   uses-material-design: true
