@@ -518,6 +518,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             });
 
             return ListView.separated(
+              shrinkWrap: true,
+              physics: const BouncingScrollPhysics(),
               padding: EdgeInsets.symmetric(
                 horizontal: isLandscape ? 12 : 20,
                 vertical: 8,

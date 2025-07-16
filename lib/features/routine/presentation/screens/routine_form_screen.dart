@@ -81,6 +81,8 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
 
   Widget _buildPortraitLayout() {
     return ListView(
+      shrinkWrap: true,
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(16),
       children: [
         TextFormField(
@@ -331,12 +333,12 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
         side: BorderSide(color: Colors.red.shade400),
         foregroundColor: Colors.red.shade600,
       ),
-      child: Row(
+      child: const Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.delete_outline, size: 20),
-          const SizedBox(width: 8),
-          const Text(
+          SizedBox(width: 8),
+          Text(
             '루틴 삭제',
             style: TextStyle(fontSize: 16),
           ),
@@ -564,10 +566,16 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
       await ref
           .read(routineNotifierProvider.notifier)
           .deleteRoutine(widget.routine!.id);
-      await showTopMessage(context, '✅ 루틴이 삭제되었습니다!');
-      context.router.pop();
+      if (mounted) {
+        await showTopMessage(context, '✅ 루틴이 삭제되었습니다!');
+        if (mounted) {
+          context.router.maybePop();
+        }
+      }
     } catch (e) {
-      await showTopMessage(context, '❌ 루틴 삭제 중 오류가 발생했습니다.');
+      if (mounted) {
+        await showTopMessage(context, '❌ 루틴 삭제 중 오류가 발생했습니다.');
+      }
     }
   }
 
@@ -577,10 +585,16 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
       await ref
           .read(routineNotifierProvider.notifier)
           .deleteThreeDayGroup(widget.routine!.groupId!);
-      await showTopMessage(context, '✅ 3일 루틴 그룹이 삭제되었습니다!');
-      context.router.pop();
+      if (mounted) {
+        await showTopMessage(context, '✅ 3일 루틴 그룹이 삭제되었습니다!');
+        if (mounted) {
+          context.router.maybePop();
+        }
+      }
     } catch (e) {
-      await showTopMessage(context, '❌ 그룹 삭제 중 오류가 발생했습니다.');
+      if (mounted) {
+        await showTopMessage(context, '❌ 그룹 삭제 중 오류가 발생했습니다.');
+      }
     }
   }
 
@@ -613,9 +627,13 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
             // print('✅ 3일 루틴 생성 결과: $success');
 
             if (success) {
-              await showTopMessage(context, '🚀 3일 챌린지가 시작되었습니다! 함께 완주해봐요!');
+              if (mounted) {
+                await showTopMessage(context, '🚀 3일 챌린지가 시작되었습니다! 함께 완주해봐요!');
+              }
             } else {
-              await showTopMessage(context, '❌ 3일 루틴 생성에 실패했습니다.');
+              if (mounted) {
+                await showTopMessage(context, '❌ 3일 루틴 생성에 실패했습니다.');
+              }
             }
           } else {
             // 일일 루틴: 1개의 루틴 생성
@@ -637,9 +655,13 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
             // print('✅ 일일 루틴 생성 결과: $success');
 
             if (success) {
-              await showTopMessage(context, '✅ 루틴이 생성되었습니다!');
+              if (mounted) {
+                await showTopMessage(context, '✅ 루틴이 생성되었습니다!');
+              }
             } else {
-              await showTopMessage(context, '❌ 루틴 생성에 실패했습니다.');
+              if (mounted) {
+                await showTopMessage(context, '❌ 루틴 생성에 실패했습니다.');
+              }
             }
           }
         } else {
@@ -658,23 +680,29 @@ class _RoutineFormScreenState extends ConsumerState<RoutineFormScreen> {
           // print('✅ 루틴 수정 결과: $success');
 
           if (success) {
-            await showTopMessage(context, '✅ 루틴이 수정되었습니다!');
+            if (mounted) {
+              await showTopMessage(context, '✅ 루틴이 수정되었습니다!');
+            }
           } else {
-            await showTopMessage(context, '❌ 루틴 수정에 실패했습니다.');
+            if (mounted) {
+              await showTopMessage(context, '❌ 루틴 수정에 실패했습니다.');
+            }
           }
         }
 
         // 성공한 경우에만 화면 닫기
-        if (success) {
+        if (success && mounted) {
           // print('🔄 화면 닫기 시작...');
-          context.router.pop();
+          context.router.maybePop();
           // print('✅ 화면 닫기 완료');
         } else {
           // print('❌ 작업이 실패하여 화면을 닫지 않습니다.');
         }
       } catch (e) {
         // print('💥 _saveRoutine 예외 발생: $e');
-        await showTopMessage(context, '❌ 예상치 못한 오류가 발생했습니다: $e');
+        if (mounted) {
+          await showTopMessage(context, '❌ 예상치 못한 오류가 발생했습니다: $e');
+        }
       }
     }
   }
